@@ -1,15 +1,193 @@
+configfile: 'config.yaml'
+#report: "report/workflow.rst"
+
 # rule to download sra files which derived from paired sequencing
 # using the grabseqs tool and modified code from the hisss snakemake pipeline
 # https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
 rule download_paired_fastq_sra:
-	output:
-		r1 = 'data/sra/{cline]/{srr}_1.fastq.gz',
-		r2 = 'data/sra/{cline]/[srr}_2.fastq.gz'
-	params:
-		outdir = '',
-		sample = '{sample}'
-	threads: 4
-	shell:
-		"""
-		grabseqs sra -t {threads} -f -r 4 --no_parsing -o {params.outdir} {params.samp}
-		"""
+    output:
+        r1 = 'data/{cline}/sra/{srr}_1.fastq.gz',
+        r2 = 'data/{cline}/sra/{srr}_2.fastq.gz',
+        meta = 'data/{cline}/sra/{srr}.meta.csv'
+    log:
+        'logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
+    shadow: 'shallow'
+    params:
+        outdir = 'data/{cline}/sra/',
+        meta = '{srr}.meta.csv'
+    resources:
+        mem_mb = 8000,
+        nodes = 1,
+        ppn = 4
+    shell:
+        """
+            grabseqs sra -m {params.meta} \
+                        -o {params.outdir} \
+                        -r 4 \
+                        -t {resources.ppn} \
+                        {wildcards.srr}
+        """
+
+
+# Downloading hg38 files as needed
+rule download_hg38_files:
+    params:
+        centromeres = 'refs/hg38/centromeres.txt.gz',
+        gaps = 'refs/hg38/gap.txt.gz'
+    output:
+        genome = 'refs/hg38/hg38.fa.gz',
+        genome_unzipped = 'refs/hg38/hg38.fa',
+        genome_sizes = 'refs/hg38/hg38.chrom.sizes',
+        centromeres = 'refs/hg38/centromeres.txt',
+        gaps = 'refs/hg38/gap.txt'
+    log:
+        'logs/rule_download_hg38_files.out'
+    shell:
+        """
+            wget -O {output.genome} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz 2> {log}
+            wget -O {output.genome_sizes} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes 2> {log}
+            wget -O {params.centromeres} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/centromeres.txt.gz 2> {log}
+            wget -O {params.gaps} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/gap.txt.gz 2> {log}
+
+            # gunzip the centromeres and gaps
+            gunzip --stdout {output.genome} > {output.genome_unzipped} 2> {log}
+            gunzip {params.centromeres} 2> {log}
+            gunzip {params.gaps} 2> {log}
+        """
+
+
+# Index the reference genome (GRCh38)
+# http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#indexing-a-reference-genome
+rule bowtie2_index_ref_genome:
+    input:
+        rules.download_hg38_files.output.genome_unzipped
+    output:
+        multiext('refs/hg38/hg38', '.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2', '.rev.1.bt2', '.rev.2.bt2')
+    params:
+        base_out = 'refs/hg38/hg38'
+    log:
+        'logs/rule_bowtie2_index_ref_genome.log'
+    shell:
+        """
+            bowtie2-build {input} {params.base_out}
+        """
+
+
+# Digesting the reference genome with different RE's, for now
+# I am including MboI, and HindIII. I followed the following instructions:
+# https://github.com/nservant/HiC-Pro/blob/master/doc/UTILS.md.
+rule digest_reference_genome:
+    input:
+        'refs/hg38/hg38.fa'
+    output:
+        mboi = 'refs/restriction_enzymes/hg38_mboi_digestion.bed',
+        hindiii = 'refs/restriction_enzymes/hg38_hindiii_digestion.bed'
+    log:
+        'logs/rule_digest_reference_genome.log'
+    shell:
+        """
+            {config[python2]} {config[hicpro_utils]}/digest_genome.py -r mboi -o {output.mboi} {input}
+            {config[python2]} {config[hicpro_utils]}/digest_genome.py -r hindiii -o {output.hindiii} {input}
+        """
+
+
+# Align the HiC data
+# https://github.com/nservant/HiC-Pro
+# 1*.bwt2merged.bam and 2.bwt2merged.bam
+rule hicpro_align:
+    input:
+        r1 = rules.download_paired_fastq_sra.output.r1,
+        r2 = rules.download_paired_fastq_sra.output.r2,
+        config = 'refs/hicpro/config-hicpro.txt'
+    output:
+        bam1 = 'data/{cline}/aln/{cline}.{srr}.1.bwt2merged.bam',
+        bam2 = 'data/{cline}/aln/{cline}.{srr}.2.bwt2merged.bam'
+    log:
+        'logs/rule_hicpro_align_{cline}_{srr}.log'
+    shell:
+        """
+            # running without setting -s so that it runs the entire
+            # pipeline (default settings)
+            singularity exec software/hicpro_latest_ubuntu.img \
+                    HiC-Pro -i {input.r1} {input.r2} \
+                            -o {output] \
+                            -c {input.config} \
+        """
+
+
+# Align the HiC data
+# https://github.com/nservant/HiC-Pro
+rule oned_read_coverage:
+    input:
+        bam1 = rules.hicpro_align.output.bam1
+        bam2 = rules.hicpro_align.output.bam2
+    output:
+        aln = 'data/{cline}/aln/{cline}.{srr}.sam',
+    log:
+        'logs/rule_hicpro_align_{cline}_{srr}.log'
+    shell:
+        """
+            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output}
+        """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Processns citizens don't do the jobs of the migrant the feature file as specified in HiCnv
+rule process_refeature:
+    input:
+        ref = 'refs/hg38/hg38.fa',
+        dig = 'refs/restriction_enzymes/hg38_mboi_digestion.bed',
+        map = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
+    params:
+        extended = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.bed',
+        gc = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.gc.bed',
+        gc_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.gc.map.bed',
+        f_gc_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.fragment.gc.map.bed'
+    output:
+        sorted_feat_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.fragment.gc.map.sorted.bed'
+    shell:
+        r"""
+            # Create extended 500bp restriction fragment file
+            awk '{{print $1"\t"$2"\t"$2+250"\t"$4"\t"$2"\t"$3"\t"$3-$2"\n"$1"\t"$3-250"\t"$3"\t"$4"\t"$2"\t"$3"\t"$3-$2}}' {input.dig} \
+                | awk '{{if($2 >= 0){{print}}}}'| sortBed > {params.extended}
+
+            # Find GC percentage of 500bp regions
+            bedtools nuc -fi {input.ref} -bed {params.extended} > {params.gc}
+
+            # Map the mappability over GC content file
+            bedtools map -a {params.gc} -b {input.map} -c 4 -o mean > {params.gc_map}
+
+            # Create F_GC_MAP file
+            perl {config[hicnv_scripts]}/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map}
+
+            # Sort the final F_GC_MAP file
+            bedtools sort -i {params.f_gc_map} > {output}
+
+            rm {params}
+        """
+
+
+
+
+
+
+
