@@ -1,34 +1,6 @@
 configfile: 'config.yaml'
 #report: "report/workflow.rst"
 
-# rule to download sra files which derived from paired sequencing
-# using the grabseqs tool and modified code from the hisss snakemake pipeline
-# https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
-rule download_paired_fastq_sra:
-    output:
-        r1 = 'data/{cline}/sra/{srr}_1.fastq.gz',
-        r2 = 'data/{cline}/sra/{srr}_2.fastq.gz',
-        meta = 'data/{cline}/sra/{srr}.meta.csv'
-    log:
-        'logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
-    shadow: 'shallow'
-    params:
-        outdir = 'data/{cline}/sra/',
-        meta = '{srr}.meta.csv'
-    resources:
-        mem_mb = 8000,
-        nodes = 1,
-        ppn = 4
-    shell:
-        """
-            grabseqs sra -m {params.meta} \
-                        -o {params.outdir} \
-                        -r 4 \
-                        -t {resources.ppn} \
-                        {wildcards.srr}
-        """
-
-
 # Downloading hg38 files as needed
 rule download_hg38_files:
     params:
@@ -69,7 +41,7 @@ rule bowtie2_index_ref_genome:
         'logs/rule_bowtie2_index_ref_genome.log'
     shell:
         """
-            bowtie2-build {input} {params.base_out}
+            bowtie2-build {input} {params.base_out} >> {log} 2>&1
         """
 
 
@@ -91,6 +63,34 @@ rule digest_reference_genome:
         """
 
 
+# rule to download sra files which derived from paired sequencing
+# using the grabseqs tool and modified code from the hisss snakemake pipeline
+# https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
+rule download_paired_fastq_sra:
+    output:
+        r1 = 'data/{cline}/sra/{srr}_1.fastq.gz',
+        r2 = 'data/{cline}/sra/{srr}_2.fastq.gz',
+        meta = 'data/{cline}/sra/{srr}.meta.csv'
+    log:
+        'logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
+    shadow: 'shallow'
+    params:
+        outdir = 'data/{cline}/sra/',
+        meta = '{srr}.meta.csv'
+    resources:
+        mem_mb = 8000,
+        nodes = 1,
+        ppn = 4
+    shell:
+        """
+            grabseqs sra -m {params.meta} \
+                        -o {params.outdir} \
+                        -r 4 \
+                        -t {resources.ppn} \
+                        {wildcards.srr} >> {log} 2>&1
+        """
+
+
 # Align the HiC data
 # https://github.com/nservant/HiC-Pro
 # 1*.bwt2merged.bam and 2.bwt2merged.bam
@@ -100,18 +100,41 @@ rule hicpro_align:
         r2 = rules.download_paired_fastq_sra.output.r2,
         config = 'refs/hicpro/config-hicpro.txt'
     output:
-        bam1 = 'data/{cline}/aln/{cline}.{srr}.1.bwt2merged.bam',
-        bam2 = 'data/{cline}/aln/{cline}.{srr}.2.bwt2merged.bam'
+        bam1 = 'data/{cline}/hicpro/{cline}.{srr}.1.bwt2merged.bam',
+        bam2 = 'data/{cline}/hicpro/{cline}.{srr}.2.bwt2merged.bam'
+    params:
+        datadir1 = 'data/{cline}/hicpro_tmp/',
+        datadir2 = 'data/{cline}/hicpro_tmp/{cline}/',
+        outdir = 'data/{cline}/hicpro/'
+    resources:
+        nodes = 1,
+        ppn = 4,
+        mem_mb = 10000
     log:
         'logs/rule_hicpro_align_{cline}_{srr}.log'
     shell:
         """
+            # setting up a temporary data directory structure for hicpro
+            mkdir -p {params.datadir2}
+            abs_r1=$(readlink -f {input.r1})
+            abs_r2=$(readlink -f {input.r2})
+            ln -s $abs_r1 {params.datadir2}
+            ln -s $abs_r2 {params.datadir2}
+
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir1})
+            abs_outdir=$(readlink -f {params.outdir})
+
             # running without setting -s so that it runs the entire
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
-                    HiC-Pro -i {input.r1} {input.r2} \
-                            -o {output] \
-                            -c {input.config} \
+            yes | singularity exec software/hicpro_latest_ubuntu.img \
+                    HiC-Pro -i $abs_datadir \
+                            -o $abs_outdir \
+                            -c {input.config} >> {log} 2>&1
+
+            # removing the temp data dir
+            #rm -r {params.datadir1}
         """
 
 
@@ -119,7 +142,7 @@ rule hicpro_align:
 # https://github.com/nservant/HiC-Pro
 rule oned_read_coverage:
     input:
-        bam1 = rules.hicpro_align.output.bam1
+        bam1 = rules.hicpro_align.output.bam1,
         bam2 = rules.hicpro_align.output.bam2
     output:
         aln = 'data/{cline}/aln/{cline}.{srr}.sam',
@@ -127,7 +150,7 @@ rule oned_read_coverage:
         'logs/rule_hicpro_align_{cline}_{srr}.log'
     shell:
         """
-            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output}
+            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output} >> {log} 2>&1
         """
 
 
