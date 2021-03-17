@@ -35,7 +35,8 @@ Usage: hicnv_v2.R [options]
 
 Options:
         --refeature=REFEATURE
-                A five column restriction enzyme cutsite bed file with GC content, mappability, fragment length infomation
+                A five column restriction enzyme cutsite bed file with GC content,
+                mappability, fragment length infomation
 
                 <chr>   <start> <end>   <GC frequency>  <mappability>   <fragment length>
 
