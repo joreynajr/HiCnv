@@ -8,16 +8,24 @@ HiCnv is a pipeline to call CNVs from Hi-C data.
 1) Process your Hi-C fastq files with HiCPro pipline (https://github.com/nservant/HiC-Pro)
 
 
-2) Processed HiCPro output directory will have a folder like "<path>/hicresult/bowtie_results/bwt2/data". Under this data folder there will be two *.bwt2merged.bam file (*_1_*.bwt2merged.bam and *_2_*.bwt2merged.bam). 
+2) Processed HiCPro output directory will have a folder like
+"<path>/hicresult/bowtie_results/bwt2/data". Under this data folder
+there will be two *.bwt2merged.bam file (*_1_*.bwt2merged.bam and *_2_*.bwt2merged.bam).
 
 
-3) "Read_coverage_generation/run_1DReadCoverage.pl" require these two bam files for CNV finding. Change the "$hic_bwt2_folder" variable of "run_1DReadCoverage.pl" script to "<path>/hicresult/bowtie_results/bwt2/data" and type "perl run_1DReadCoverage.pl" inside "Read_coverage_generation" directory. This will create a "1DReadCoverage.*.sh" file.
+3) "Read_coverage_generation/run_1DReadCoverage.pl" require these two bam files for
+CNV finding. Change the "$hic_bwt2_folder" variable of "run_1DReadCoverage.pl" script
+to "<path>/hicresult/bowtie_results/bwt2/data" and type "perl run_1DReadCoverage.pl"
+inside "Read_coverage_generation" directory. This will create a "1DReadCoverage.*.sh" file.
 
 
-4) "1DReadCoverage.*.sh" will require a restriction fragment specific *.fragments.F_GC_MAP.bed file(Fragment length, GC content and Mappability information file). To generate this file as per your experiment, please go to "scripts/F_GC_MAP_Files/" directory and type "./F_GC_MAP.file.sh". Change the variables of the script to match your requirement. 
+4) "1DReadCoverage.*.sh" will require a restriction fragment specific *.fragments.F_GC_MAP.bed
+file(Fragment length, GC content and Mappability information file). To generate this file as
+per your experiment, please go to "scripts/F_GC_MAP_Files/" directory and type "./F_GC_MAP.file.sh".
+Change the variables of the script to match your requirement.
 
-
-5) Running "1DReadCoverage.*.sh" will create the *.perREfragStats and *.F_GC_MAP.bed files from Hi-C data for downstream processing.
+5) Running "1DReadCoverage.*.sh" will create the *.perREfragStats and
+*.F_GC_MAP.bed files from Hi-C data for downstream processing.
 
 6) Run hicnv_v2.R, check the usage for more details.
 
@@ -49,13 +57,15 @@ Options:
         --fragcutoff=FRAGCUTOFF
                 Fragment length cutoff. Anything below <fragcutoff> will be removed [Default is 150].
 
-                For Hi-C experiments with 4bp cut enzyme, this value is 150, for 6bp enzymes this value should be 1000.
+                For Hi-C experiments with 4bp cut enzyme, this value is 150, for 6bp
+                enzymes this value should be 1000.
 
 
         --refchrom=REFCHROM
                 Name of the reference chromosome for CNV detection.
 
-                If no name is provided then HiCnv proceed to estimate proportion of interaction count or PIC to decide a reference chromosome.
+                If no name is provided then HiCnv proceed to estimate proportion of
+                interaction count or PIC to decide a reference chromosome.
 
 
         --bandwidth=BANDWIDTH
@@ -67,7 +77,9 @@ Options:
 
 
         --threshold=THRESHOLD
-                Threshold value to define amplification and deletion with respect to normal region [Default is 0.2 i.e. deviation of 20% from mean normal value will be labeled as CNV].
+                Threshold value to define amplification and deletion with respect to
+                normal region [Default is 0.2 i.e. deviation of 20% from mean normal
+                value will be labeled as CNV].
 
 
         --prefix=PREFIX
@@ -84,16 +96,22 @@ Options:
 
 # Note:
 
-CNV calling requires GC content, mappability and fragment length information of every RE fragments. The *.F_GC_MAP.bed file contains all these information.
-The file can be created using F_GC_MAP.file.sh script available under "scripts/F_GC_MAP_Files/" folder. To create the file, please run the script inside the "scripts/F_GC_MAP_Files/" folder. Also, change the variables as per the Hi-C experiment. 
+CNV calling requires GC content, mappability and fragment length information of every RE
+fragments. The *.F_GC_MAP.bed file contains all these information.  The file can be
+created using F_GC_MAP.file.sh script available under "scripts/F_GC_MAP_Files/" folder.
+To create the file, please run the script inside the "scripts/F_GC_MAP_Files/" folder.
+Also, change the variables as per the Hi-C experiment.
 
 For more details check "Rscript hicnv_v2.R --help".
 
 # Covert an aligned Hi-C sam file into HiCnv usable format:
 
-The script "samToHiCProFormat.pl" under "scripts/" folder takes an aligned HiC file in sam format. This can be a merged.sam (both forward and reverse reads merged/paired format) file or in single format file where forward and reverse reads are mapped into separate files (e.g forward.sam and reverse.sam).
+The script "samToHiCProFormat.pl" under "scripts/" folder takes an aligned HiC file in
+sam format. This can be a merged.sam (both forward and reverse reads merged/paired
+format) file or in single format file where forward and reverse reads are mapped into
+separate files (e.g forward.sam and reverse.sam).
 
-The script an be run like the following 
+The script an be run like the following
 
 perl samToHiCProFormat.pl -format paired -sam_file merged.sam -strand 0 -chr 3 -pos 4 -mapq 5 -read_len 6 -read_pos 10 -out_file test
 
@@ -117,9 +135,11 @@ $hic_bwt2_folder_REV = "mate2.bam";
 
 This will enable HiCnv to read the bam files.
 
-The "samToHiCProFormat_Example" folder contains example data to convert Hi-C sam files into HiCnv format.
+The "samToHiCProFormat_Example" folder contains example data to convert Hi-C sam files
+into HiCnv format.
 
-Note: In forward.sam and reverse,sam files the total number of reads should be equal and assumed that each row of the two files should represent the same read.
+Note: In forward.sam and reverse,sam files the total number of reads should be equal
+and assumed that each row of the two files should represent the same read.
 
 # Double Minute (DM) and Homogeneously Staining Regions (HSR) scanning
 
@@ -129,4 +149,5 @@ For more details check "Rscript ./scripts/dm_hsr.r --help"
 
 # Contact
 
-abhijit@lji.org (Abhijit Chakraborty)
+mod: jreyna@lji.org (Joaquin Reyna)
+orig: abhijit@lji.org (Abhijit Chakraborty)
