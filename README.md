@@ -1,33 +1,32 @@
-# HiCnv version 2
+# HiCnv version 3
 
-HiCnv is a pipeline to call CNVs from Hi-C data.
-"scripts" folder contains all the scripts to call CNVs from Hi-C data.
+HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to facilitate the usage and interface of HiCnv.
 
-# Steps: Process the HiC data and generate coverage, GC content, mappability and fragment length information file
+# Steps: Process the HiC data; generate coverage, GC content, mappability and fragment length information file
 
-1) Process your Hi-C fastq files with HiCPro pipline (https://github.com/nservant/HiC-Pro)
+1) Rule download_paired_fastq_sra: Download raw HiC data 
+snakemake --profiles profile/pbs-torque `data/{cline}/sra/{srr}_1.fastq.gz`
 
+2) Rule digest_reference_genome: digest hg38 using Mboi and HindIII
+snakemake --profiles profile/pbs-torque `completed documentation coming`
 
-2) Processed HiCPro output directory will have a folder like
-"<path>/hicresult/bowtie_results/bwt2/data". Under this data folder
-there will be two *.bwt2merged.bam file (*_1_*.bwt2merged.bam and *_2_*.bwt2merged.bam).
+3) Follow instructions at within the HiCPro documentation to generate an appropriate config file
+Github link (https://github.com/nservant/HiC-Pro)
 
+4) Rule hicpro_align: Process your Hi-C fastq files with HiCPro pipeline (https://github.com/nservant/HiC-Pro)
+snakemake --profiles profile/pbs-torque `data/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag`
 
-3) "Read_coverage_generation/run_1DReadCoverage.pl" require these two bam files for
-CNV finding. Change the "$hic_bwt2_folder" variable of "run_1DReadCoverage.pl" script
-to "<path>/hicresult/bowtie_results/bwt2/data" and type "perl run_1DReadCoverage.pl"
-inside "Read_coverage_generation" directory. This will create a "1DReadCoverage.*.sh" file.
+5) Rule download_hg38_mappability: download the mappability file which is used to generate the F_GC_MAP file
+snakemake --profiles profile/pbs-torque `completed documentation coming`
 
+6) Rule process_refeature: generate a restriction fragment specific file known as the *.fragments.F_GC_MAP.bed (Fragment length, GC content and Mappability information file) 
+file using existings commands. 
+snakemake --profiles profile/pbs-torque `completed documentation coming`
 
-4) "1DReadCoverage.*.sh" will require a restriction fragment specific *.fragments.F_GC_MAP.bed
-file(Fragment length, GC content and Mappability information file). To generate this file as
-per your experiment, please go to "scripts/F_GC_MAP_Files/" directory and type "./F_GC_MAP.file.sh".
-Change the variables of the script to match your requirement.
+7) One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file.
+snakemake command tbd
 
-5) Running "1DReadCoverage.*.sh" will create the *.perREfragStats and
-*.F_GC_MAP.bed files from Hi-C data for downstream processing.
-
-6) Run hicnv_v2.R, check the usage for more details.
+8) Run hicnv_v2.R, check the usage for more details.
 
 ```bash
 Usage: hicnv_v2.R [options]
@@ -95,6 +94,10 @@ Options:
                 Show this help message and exit
 ```
 
+# Other snakemake rules that are currently working and will be organized soon:
+- Rule download_hg38_files
+- Rule bowtie2_index_ref_genome
+
 # Note:
 
 CNV calling requires GC content, mappability and fragment length information of every RE
@@ -151,4 +154,5 @@ For more details check "Rscript ./scripts/dm_hsr.r --help"
 # Contact
 
 mod: jreyna@lji.org (Joaquin Reyna)
+
 orig: abhijit@lji.org (Abhijit Chakraborty)
