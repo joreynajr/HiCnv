@@ -1,6 +1,8 @@
 configfile: 'config.yaml'
 #report: "report/workflow.rst"
 
+#include: "rules/run_1DReadCoverage.smk"
+
 # Downloading hg38 files as needed
 rule download_hg38_files:
     params:
@@ -94,22 +96,23 @@ rule download_paired_fastq_sra:
 # Align the HiC data
 # https://github.com/nservant/HiC-Pro
 # 1*.bwt2merged.bam and 2.bwt2merged.bam
+# bam1 = 'data/{cline}/hicpro/{cline}.{srr}.1.bwt2merged.bam',
+# bam2 = 'data/{cline}/hicpro/{cline}.{srr}.2.bwt2merged.bam'
 rule hicpro_align:
     input:
         r1 = rules.download_paired_fastq_sra.output.r1,
         r2 = rules.download_paired_fastq_sra.output.r2,
         config = 'refs/hicpro/config-hicpro.txt'
     output:
-        bam1 = 'data/{cline}/hicpro/{cline}.{srr}.1.bwt2merged.bam',
-        bam2 = 'data/{cline}/hicpro/{cline}.{srr}.2.bwt2merged.bam'
+        flag = 'data/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag'
     params:
-        datadir1 = 'data/{cline}/hicpro_tmp/',
-        datadir2 = 'data/{cline}/hicpro_tmp/{cline}/',
-        outdir = 'data/{cline}/hicpro/'
+        datadir1 = 'data/{cline}/hicpro_tmp_{srr}/',
+        datadir2 = 'data/{cline}/hicpro_tmp_{srr}/{srr}/',
+        outdir = 'data/{cline}/{srr}/hicpro/'
     resources:
         nodes = 1,
         ppn = 4,
-        mem_mb = 10000
+        mem_mb = 50000
     log:
         'logs/rule_hicpro_align_{cline}_{srr}.log'
     shell:
@@ -135,46 +138,49 @@ rule hicpro_align:
 
             # removing the temp data dir
             #rm -r {params.datadir1}
+
+            touch {output.flag}
         """
 
 
 # Align the HiC data
 # https://github.com/nservant/HiC-Pro
-rule oned_read_coverage:
-    input:
-        bam1 = rules.hicpro_align.output.bam1,
-        bam2 = rules.hicpro_align.output.bam2
+#rule oned_read_coverage:
+#    input:
+#        bam1 = rules.hicpro_align.output.bam1,
+#        bam2 = rules.hicpro_align.output.bam2
+#    output:
+#        aln = 'data/{cline}/aln/{cline}.{srr}.sam',
+#    log:
+#        'logs/rule_hicpro_align_{cline}_{srr}.log'
+#    shell:
+#        """
+#            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output} >> {log} 2>&1
+#        """
+
+
+# Download the mappability file for hg38 and do processing for HiCnv
+rule download_hg38_mappability:
+    params:
+        map = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.bw',
+        bedgraph = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.bedGraph'
     output:
-        aln = 'data/{cline}/aln/{cline}.{srr}.sam',
-    log:
-        'logs/rule_hicpro_align_{cline}_{srr}.log'
+        sorted_bg = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
     shell:
         """
-            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output} >> {log} 2>&1
+            ## Check the https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/ to download genome specific mappability files
+            wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \\
+                -O {params.map}
+
+            ## Process the bigWig file and create bedGraph file
+            bigWigToBedGraph {params.map} {params.bedgraph}
+            sort -k 1,1 -k2,2n {params.bedgraph} > {output}
+
+            rm {params.bedgraph}
         """
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Processns citizens don't do the jobs of the migrant the feature file as specified in HiCnv
+# Process the feature file as specified in HiCnv
 rule process_refeature:
     input:
         ref = 'refs/hg38/hg38.fa',
@@ -200,7 +206,7 @@ rule process_refeature:
             bedtools map -a {params.gc} -b {input.map} -c 4 -o mean > {params.gc_map}
 
             # Create F_GC_MAP file
-            perl {config[hicnv_scripts]}/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map}
+            perl scripts/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map}
 
             # Sort the final F_GC_MAP file
             bedtools sort -i {params.f_gc_map} > {output}
@@ -209,8 +215,20 @@ rule process_refeature:
         """
 
 
-
-
-
-
-
+## Run HiCnv a chromosome at a time
+#rule run_hicnv:
+#    input:
+#        feat = rules.process_refeature.output.sorted_feat_map,
+#        cov = rules.one_dim_3div_bedpe_hicnv_version.output
+#    output:
+#        'output/{dataset}/{cline}/copy_numbers/{chrom}.test'
+#    log:
+#        'logs/run_hicnv_{dataset}_{cline}_{chrom}.log'
+#    shell:
+#        """
+#            {config[R4]} {config[hicnv]} \
+#                --refeature={input.feat} \
+#                --coverage={input.cov} \
+#                --refchrom={wildcards.chrom} \
+#                --prefix={wildcards.cline} >> {log} 2>&1
+#        """

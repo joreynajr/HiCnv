@@ -49,8 +49,8 @@ foreach my $f (@Files) {
   if (! -d "$f\_Read_Coverage") {
     system("mkdir $f\_Read_Coverage");
   }
-  my @repFiles = `ls $HiCpro_run/$f\_data_HiCPro/bowtie_results/bwt2/data/*_1_*.bwt2merged.bam |sed -e 's/\\// /g' |awk '{print \$NF}' |cut -d_ -f 1`;
   chdir "$f\_Read_Coverage";
+  my @repFiles = `ls $HiCpro_run/$f\_data_HiCPro/bowtie_results/bwt2/data/*_1_*.bwt2merged.bam |sed -e 's/\\// /g' |awk '{print \$NF}' |cut -d_ -f 1`;
   my $i = 0;
   while ($i <= $#repFiles) {
     chomp $repFiles[$i]; 
