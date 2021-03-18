@@ -5,28 +5,40 @@ HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to fa
 # Steps: Process the HiC data; generate coverage, GC content, mappability and fragment length information file
 
 1) Rule download_paired_fastq_sra: Download raw HiC data 
+
 snakemake --profiles profile/pbs-torque `data/{cline}/sra/{srr}_1.fastq.gz`
 
 2) Rule digest_reference_genome: digest hg38 using Mboi and HindIII
+
 snakemake --profiles profile/pbs-torque `completed documentation coming`
 
 3) Follow instructions at within the HiCPro documentation to generate an appropriate config file
 Github link (https://github.com/nservant/HiC-Pro)
 
 4) Rule hicpro_align: Process your Hi-C fastq files with HiCPro pipeline (https://github.com/nservant/HiC-Pro)
+
 snakemake --profiles profile/pbs-torque `data/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag`
 
 5) Rule download_hg38_mappability: download the mappability file which is used to generate the F_GC_MAP file
+
 snakemake --profiles profile/pbs-torque `completed documentation coming`
 
 6) Rule process_refeature: generate a restriction fragment specific file known as the *.fragments.F_GC_MAP.bed (Fragment length, GC content and Mappability information file) 
 file using existings commands. 
+
 snakemake --profiles profile/pbs-torque `completed documentation coming`
 
-7) One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file.
-snakemake command tbd
+7) Rule: oned_read_coverage: One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file.
 
-8) Run hicnv_v2.R, check the usage for more details.
+snakemake command `tbd`
+
+snakemake --profiles profile/pbs-torque `not completed`
+
+8) Rule run_hicnv: Run hicnv_v2.R
+
+snakemake --profiles profile/pbs-torque `not completed`
+
+For more details on hicnv_v2.R check the usage below:
 
 ```bash
 Usage: hicnv_v2.R [options]
