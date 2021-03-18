@@ -30,8 +30,6 @@ snakemake --profiles profile/pbs-torque `completed documentation coming`
 
 7) Rule: oned_read_coverage: One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file.
 
-snakemake command `tbd`
-
 snakemake --profiles profile/pbs-torque `not completed`
 
 8) Rule run_hicnv: Run hicnv_v2.R
@@ -106,7 +104,7 @@ Options:
                 Show this help message and exit
 ```
 
-# Other snakemake rules that are currently working and will be organized soon:
+# Other snakemake rules that are available:
 - Rule download_hg38_files
 - Rule bowtie2_index_ref_genome
 
