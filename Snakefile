@@ -1,7 +1,7 @@
 configfile: 'config.yaml'
 #report: "report/workflow.rst"
-
-#include: "rules/run_1DReadCoverage.smk"
+include: "rules/hicpro.smk"
+include: "rules/hicnv.smk"
 
 # Downloading hg38 files as needed
 rule download_hg38_files:
@@ -141,94 +141,3 @@ rule hicpro_align:
 
             touch {output.flag}
         """
-
-
-# Align the HiC data
-# https://github.com/nservant/HiC-Pro
-#rule oned_read_coverage:
-#    input:
-#        bam1 = rules.hicpro_align.output.bam1,
-#        bam2 = rules.hicpro_align.output.bam2
-#    output:
-#        aln = 'data/{cline}/aln/{cline}.{srr}.sam',
-#    log:
-#        'logs/rule_hicpro_align_{cline}_{srr}.log'
-#    shell:
-#        """
-#            scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output} >> {log} 2>&1
-#        """
-
-
-# Download the mappability file for hg38 and do processing for HiCnv
-rule download_hg38_mappability:
-    params:
-        map = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.bw',
-        bedgraph = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.bedGraph'
-    output:
-        sorted_bg = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
-    shell:
-        """
-            ## Check the https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/ to download genome specific mappability files
-            wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \\
-                -O {params.map}
-
-            ## Process the bigWig file and create bedGraph file
-            bigWigToBedGraph {params.map} {params.bedgraph}
-            sort -k 1,1 -k2,2n {params.bedgraph} > {output}
-
-            rm {params.bedgraph}
-        """
-
-
-# Process the feature file as specified in HiCnv
-rule process_refeature:
-    input:
-        ref = 'refs/hg38/hg38.fa',
-        dig = 'refs/restriction_enzymes/hg38_mboi_digestion.bed',
-        map = 'refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
-    params:
-        extended = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.bed',
-        gc = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.gc.bed',
-        gc_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.gc.map.bed',
-        f_gc_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.fragment.gc.map.bed'
-    output:
-        sorted_feat_map = 'refs/restriction_enzymes/hg38_mboi_digestion.extended.fragment.gc.map.sorted.bed'
-    shell:
-        r"""
-            # Create extended 500bp restriction fragment file
-            awk '{{print $1"\t"$2"\t"$2+250"\t"$4"\t"$2"\t"$3"\t"$3-$2"\n"$1"\t"$3-250"\t"$3"\t"$4"\t"$2"\t"$3"\t"$3-$2}}' {input.dig} \
-                | awk '{{if($2 >= 0){{print}}}}'| sortBed > {params.extended}
-
-            # Find GC percentage of 500bp regions
-            bedtools nuc -fi {input.ref} -bed {params.extended} > {params.gc}
-
-            # Map the mappability over GC content file
-            bedtools map -a {params.gc} -b {input.map} -c 4 -o mean > {params.gc_map}
-
-            # Create F_GC_MAP file
-            perl scripts/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map}
-
-            # Sort the final F_GC_MAP file
-            bedtools sort -i {params.f_gc_map} > {output}
-
-            rm {params}
-        """
-
-
-## Run HiCnv a chromosome at a time
-#rule run_hicnv:
-#    input:
-#        feat = rules.process_refeature.output.sorted_feat_map,
-#        cov = rules.one_dim_3div_bedpe_hicnv_version.output
-#    output:
-#        'output/{dataset}/{cline}/copy_numbers/{chrom}.test'
-#    log:
-#        'logs/run_hicnv_{dataset}_{cline}_{chrom}.log'
-#    shell:
-#        """
-#            {config[R4]} {config[hicnv]} \
-#                --refeature={input.feat} \
-#                --coverage={input.cov} \
-#                --refchrom={wildcards.chrom} \
-#                --prefix={wildcards.cline} >> {log} 2>&1
-#        """
