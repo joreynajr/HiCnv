@@ -1,5 +1,6 @@
+# HiCPro documentation https://github.com/nservant/HiC-Pro
+
 # Align the HiC data
-# https://github.com/nservant/HiC-Pro
 # 1*.bwt2merged.bam and 2.bwt2merged.bam
 # bam1 = 'data/{cline}/hicpro/{cline}.{srr}.1.bwt2merged.bam',
 # bam2 = 'data/{cline}/hicpro/{cline}.{srr}.2.bwt2merged.bam'
