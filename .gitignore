@@ -1,7 +1,13 @@
 *~
-logs/
-data/
 refs/
+logs/
 software/
 .snakemake/
 example/Test/
+
+data/*
+!data/test/
+data/test/*
+!data/test/config_test_latest.txt
+!data/test/README.txt
+!data/test/sra/
