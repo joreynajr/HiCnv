@@ -1,7 +1,5 @@
 configfile: 'config.yaml'
 #report: "report/workflow.rst"
-include: "rules/hicpro.smk"
-include: "rules/hicnv.smk"
 
 # Downloading hg38 files as needed
 rule download_hg38_files:
@@ -141,3 +139,6 @@ rule hicpro_align:
 
             touch {output.flag}
         """
+
+include: "rules/hicpro.smk"
+include: "rules/hicnv.smk"
