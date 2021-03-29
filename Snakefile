@@ -1,5 +1,5 @@
 configfile: 'config.yaml'
-#report: "report/workflow.rst"
+#report: "reports/workflow.rst"
 
 # Downloading hg38 files as needed
 rule download_hg38_files:

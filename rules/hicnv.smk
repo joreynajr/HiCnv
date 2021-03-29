@@ -42,7 +42,7 @@ rule process_refeature:
             # Find GC percentage of 500bp regions
             bedtools nuc -fi {input.ref} -bed {params.extended} > {params.gc}
 
-            # Map the mappability over GC content file
+            # Map the mappability over to the GC content file
             bedtools map -a {params.gc} -b {input.map} -c 4 -o mean > {params.gc_map}
 
             # Create F_GC_MAP file
@@ -107,35 +107,22 @@ rule make_perREfragStats:
           """
 
 
-# One dimensionalzie the read coverage data
-rule onedim_read_coverage:
+# Run HiCnv a chromosome at a time
+#rules.make_perREfragStats.output.frag_stats
+#rules.process_refeature.output.sorted_feat_map,
+rule run_hicnv:
     input:
-        bam1 = rules.hicpro_align_only.output.bam1,
-        bam2 = rules.hicpro_align_only.output.bam2
+        feat = 'refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.bed',
+        cov = rules.make_perREfragStats.output.frag_stats
     output:
-        aln = 'data/{cline}/hicnv/{cline}.{srr}.onedim.bed',
+        'data/{cline}/hicnv/{cline}_{srr}_hicnv_final.test'
     log:
-        'logs/rule_onedim_read_coverage_{cline}_{srr}.log'
+        'logs/run_hicnv_{cline}_{srr}.log'
     shell:
         """
-            perl scripts/Read_coverage_generation/run_1DReadCoverage.pl {input} {output} >> {log} 2>&1
+            {config[R4]} {config[hicnv]} \
+                --refeature={input.feat} \
+                --coverage={input.cov} \
+                --refchrom=1 \
+                --prefix={wildcards.cline} >> {log} 2>&1
         """
-
-
-## Run HiCnv a chromosome at a time
-#rule run_hicnv:
-#    input:
-#        feat = rules.process_refeature.output.sorted_feat_map,
-#        cov = rules.one_dim_3div_bedpe_hicnv_version.output
-#    output:
-#        'output/{dataset}/{cline}/copy_numbers/{chrom}.test'
-#    log:
-#        'logs/run_hicnv_{dataset}_{cline}_{chrom}.log'
-#    shell:
-#        """
-#            {config[R4]} {config[hicnv]} \
-#                --refeature={input.feat} \
-#                --coverage={input.cov} \
-#                --refchrom={wildcards.chrom} \
-#                --prefix={wildcards.cline} >> {log} 2>&1
-#        """

@@ -1,5 +1,6 @@
 *~
 refs/
+misc/
 logs/
 software/
 .snakemake/
