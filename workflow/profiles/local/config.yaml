@@ -1,0 +1,7 @@
+cores: 1
+latency-wait: 120
+printshellcmds: true
+reason: true
+keep-going: true
+nolock: true
+report-stylesheet: "custom-stylesheet.css"

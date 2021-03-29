@@ -1,8 +1,0 @@
-cores: 25
-latency-wait: 120
-cluster: "qsub.py"
-printshellcmds: true
-reason: true
-keep-going: true
-nolock: true
-report-stylesheet: "custom-stylesheet.css"

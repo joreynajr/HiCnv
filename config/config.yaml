@@ -1,0 +1,5 @@
+python2: "/mnt/BioHome/jreyna/software/anaconda3/envs/python_2.7.18/bin/python"
+R4: "/mnt/BioHome/jreyna/R-Versions/R-4.0.3/bin/Rscript"
+hicpro_utils: "/mnt/BioHome/jreyna/software/HiC-Pro/bin/utils/"
+hicnv: "/home/jreyna/software/HiCnv/hicnv_v2.R"
+hicnv_scripts: "/home/jreyna/software/HiCnv/scripts/"

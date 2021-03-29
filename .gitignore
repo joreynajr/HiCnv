@@ -1,14 +1,15 @@
 *~
-refs/
-misc/
-logs/
-software/
+workflow/refs/
+workflow/misc/
+workflow/logs/
 .snakemake/
-example/Test/
 
-data/*
-!data/test/
-data/test/*
-!data/test/config_test_latest.txt
-!data/test/README.txt
-!data/test/sra/
+resources/software/*
+!resources/software/download_hicpro_img.sh
+
+results/*
+!results/test/
+results/test/*
+!results/test/config_test_latest.txt
+!results/test/README.txt
+!results/test/sra/
