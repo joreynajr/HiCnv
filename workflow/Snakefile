@@ -72,7 +72,7 @@ rule download_paired_fastq_sra: # RESTR TEST DONE
         r2 = 'results/main/{cline}/sra/{srr}_2.fastq.gz',
         meta = 'results/main/{cline}/sra/{srr}.meta.csv'
     log:
-        'logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
     shadow: 'shallow'
     params:
         outdir = 'results/main/{cline}/sra/',
