@@ -90,56 +90,5 @@ rule download_paired_fastq_sra: # RESTR TEST DONE
                         {wildcards.srr} >> {log} 2>&1
         """
 
-## Align the HiC data
-## Deprecated since running it all at once is too monolithic meaning
-## if the pipeline crashes then you have to restart the whole thing.
-## https://github.com/nservant/HiC-Pro
-## 1*.bwt2merged.bam and 2.bwt2merged.bam
-## bam1 = 'results/main/{cline}/hicpro/{cline}.{srr}.1.bwt2merged.bam',
-## bam2 = 'results/main/{cline}/hicpro/{cline}.{srr}.2.bwt2merged.bam'
-#rule hicpro_align:
-#    input:
-#        r1 = rules.download_paired_fastq_sra.output.r1,
-#        r2 = rules.download_paired_fastq_sra.output.r2,
-#        config = 'refs/hicpro/config-hicpro.txt'
-#    output:
-#        flag = 'results/main/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag'
-#    params:
-#        results/maindir1 = 'results/main/{cline}/hicpro_tmp_{srr}/',
-#        results/maindir2 = 'results/main/{cline}/hicpro_tmp_{srr}/{srr}/',
-#        outdir = 'results/main/{cline}/{srr}/hicpro/'
-#    resources:
-#        nodes = 1,
-#        ppn = 4,
-#        mem_mb = 50000
-#    log:
-#        'logs/rule_hicpro_align_{cline}_{srr}.log'
-#    shell:
-#        """
-#            # setting up a temporary data directory structure for hicpro
-#            mkdir -p {params.datadir2}
-#            abs_r1=$(readlink -f {input.r1})
-#            abs_r2=$(readlink -f {input.r2})
-#            ln -s $abs_r1 {params.datadir2}
-#            ln -s $abs_r2 {params.datadir2}
-#
-#            # getting absoluate paths for data and outdirs, required
-#            # by HiCPro
-#            abs_datadir=$(readlink -f {params.datadir1})
-#            abs_outdir=$(readlink -f {params.outdir})
-#
-#            # running without setting -s so that it runs the entire
-#            # pipeline (default settings)
-#            yes | singularity exec software/hicpro_latest_ubuntu.img \
-#                    HiC-Pro -i $abs_datadir \
-#                            -o $abs_outdir \
-#                            -c {input.config} >> {log} 2>&1
-#
-#            # removing the temp data dir
-#            #rm -r {params.datadir1}
-#
-#            touch {output.flag}
-#        """
-
 include: "rules/hicpro.smk"
 include: "rules/hicnv.smk"
