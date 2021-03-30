@@ -8,7 +8,6 @@
 
 ### An optimized and flexible workflow for copy number caling from HiC data
 
-[![Build Status](https://travis-ci.com/nservant/HiC-Pro.svg?branch=devel_py3)](https://travis-ci.com/nservant/HiC-Pro)
 [![DOI](https://img.shields.io/badge/DOI-10.1186%2Fs13059--015--0831--x-lightgrey.svg?style=flat-square)](https://pubmed.ncbi.nlm.nih.gov/29048467/)
 
 ----
