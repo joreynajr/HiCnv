@@ -4,20 +4,31 @@ HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
 facilitate the usage and interface. Currently HiCnv is setup to download 
 SRA files followed by alignment with HiCPro and CNV analysis. 
 
-# Preparing the reference files 
-## hg38 reference files
-Rule download_hg38_files
-
+# Process the hg38 reference files
+To download the hg38 reference use: 
+`
+# Rule download_hg38_files
+snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
+`
+Then index those reference files using:
+`
 Rule bowtie2_index_ref_genome
+snakemake --profile workflow/profiles/local results/refs/hg38/hg38.1.bt2
+`
 
-Rule digest_reference_genome: digest hg38 using Mboi and HindIII
+Lastly, digest the reference genome in with Mbo1 and HindIII, these will be used
+later in the HiCPro configuration process.
+`
+# Rule digest_reference_genome
+snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_mboi_digestion.bed
+snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_hindiii_digestion.bed
 
-snakemake --profiles profile/pbs-torque `completed documentation coming`
+`
 
-# Preparing the HiCPro config
-Follow instructions at within the HiCPro documentation to generate an appropriate config file
-Github link (https://github.com/nservant/HiC-Pro)
-
+# Prepare the HiCPro config
+The HiCPro configuration file must be setup with the file paths from the digested before. This 
+part has to be done manually and to the specification of HiCPro so please follow this link (https://github.com/nservant/HiC-Pro)
+and store the configuration file within `/results/refs/hicpro/config-hicpro.<<enzyme-name>>.txt`.
 
 # Download SRA paired fastq data
 Rule download_paired_fastq_sra: Download raw HiC data
