@@ -1,11 +1,22 @@
 # HiCPro documentation https://github.com/nservant/HiC-Pro
+# Download the HiCPro singularity img file which as linked
+# under the HiCPro documentation section called
+# "Using HiC-Pro through Singularity", it's the first sentence.
+rule download_hicpro_singularity_img:
+    output:
+        hicpro_img = 'resources/software/hicpro_latest_ubuntu.img'
+    shell:
+        """
+            wget -O {output} https://zerkalo.curie.fr/partage/HiC-Pro/singularity_images/hicpro_latest_ubuntu.img
+        """
 
 # Align the HiC data
-rule hicpro_align_only: # Restruct test done
+rule hicpro_align_only:
     input:
         r1 = rules.download_paired_fastq_sra.output.r1,
         r2 = rules.download_paired_fastq_sra.output.r2,
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
         bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam'
@@ -35,7 +46,7 @@ rule hicpro_align_only: # Restruct test done
 
             # running without setting -s so that it runs the entire
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s mapping \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -47,11 +58,12 @@ rule hicpro_align_only: # Restruct test done
 
 
 ## Process the HiC data with HiCPro (single step)
-rule hicpro_hic_proc_only: # Restruct test done
+rule hicpro_hic_proc_only:
     input:
         bam1 = rules.hicpro_align_only.output.bam1,
         bam2 = rules.hicpro_align_only.output.bam2,
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs'
     params:
@@ -71,7 +83,7 @@ rule hicpro_hic_proc_only: # Restruct test done
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s proc_hic \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -84,7 +96,8 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
     input:
         bam1 = rules.hicpro_align_only.output.bam1,
         bam2 = rules.hicpro_align_only.output.bam2,
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         qc = directory('results/main/{cline}/hicpro/hic_results/pic/{srr}')
     params:
@@ -104,7 +117,7 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s quality_checks \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -116,7 +129,8 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
 rule hicpro_merge_persample_only:
     input:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs',
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}.allValidPairs',
         stats = 'results/main/{cline}/hicpro/hic_results/stats/{srr}/{srr}_allValidPairs.mergestat'
@@ -137,7 +151,7 @@ rule hicpro_merge_persample_only:
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s merge_persample \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -146,10 +160,11 @@ rule hicpro_merge_persample_only:
 
 
 # Build contact maps for the HiC data with HiCPro (single step)
-rule hicpro_build_contact_maps_only: # Restruct test done
+rule hicpro_build_contact_maps_only:
     input:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}.allValidPairs',
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         mat = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000.matrix',
         bed = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000_abs.bed'
@@ -170,7 +185,7 @@ rule hicpro_build_contact_maps_only: # Restruct test done
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s build_contact_maps \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -183,7 +198,8 @@ rule hicpro_ice_norm_only:
     input:
         mat = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000.matrix',
         bed = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000_abs.bed',
-        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
+        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         matrix = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/iced/10000/{srr}_10000_iced.matrix',
         biases = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/iced/10000/{srr}_10000_iced.matrix.biases'
@@ -204,7 +220,7 @@ rule hicpro_ice_norm_only:
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {config[hicpro_img]} \
+            singularity exec {input.hicpro_img} \
                     HiC-Pro -s ice_norm \
                             -i $abs_datadir \
                             -o $abs_outdir \
