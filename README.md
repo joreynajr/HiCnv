@@ -9,11 +9,10 @@
 The current version of this HiCnv uses Snakemake to facilitate deployment and improve reproducibility. Currently, HiCnv is setup to download SRA files followed by alignment with HiCPro and CNV analysis. 
 
 # Process the hg38 reference files
-To download the hg38 reference use: 
-`
-# Rule download_hg38_files
+To download the hg38 reference use (Rule download_hg38_files): 
+<pre>
 snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
-`
+</pre>
 
 Then index those reference files using:
 `
