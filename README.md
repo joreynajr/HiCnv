@@ -30,6 +30,14 @@ Rules within this workflow attempt to facilitate the installation of a few key s
 - Singularity 
 
 ## Usage
+### Snakemake config
+The Snakemake config file is located within `config/config.yaml`, please set the following variables (using the YAML format already provided) with paths to the correponding resources or software:
+<pre>
+R4: <path to R 4.X.X with library dependencies installed>
+python2: <path to Python 2.7 with package dependencies installedd>
+hicpro_dir: <path to the main HiCPro installation directory> 
+</pre>
+
 ### Process the hg38 reference files
 To download the hg38 reference use (Rule download_hg38_files): 
 <pre>
@@ -51,7 +59,7 @@ snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzyme
 
 ### Prepare the HiCPro config
 The HiCPro configuration file must be setup manually as specified by [HiCPro](https://github.com/nservant/HiC-Pro/blob/master/doc/MANUAL.md)
-and includes setting `GENOME_FRAGMENT = results/refs/restriction_enzymes/hg38_{re}_digestion.bed`. Once completed store the configuration file within `/results/refs/hicpro/config-hicpro.{re}.txt`.
+and includes setting `GENOME_FRAGMENT = results/refs/restriction_enzymes/hg38_{re}_digestion.bed`. Once completed store the configuration file within `/results/refs/hicpro/config-hicpro.{re}.txt`. This process should be completed for every restriction enzyme used by your dataset.
 
 ### Download SRA paired fastq data
 Uses Rule download_paired_fastq_sra:
