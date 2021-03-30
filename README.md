@@ -25,9 +25,9 @@ Rules within this workflow attempt to facilitate the installation of a few key s
   - ...
 - R 
   - ...
-- HiCPro Docker img
-- HiCPro Utilities
-- Singularity 
+- [HiCPro](https://github.com/nservant/HiC-Pro)
+- HiCPro Docker img (installed by workflow)
+- [Singularity](https://singularity.lbl.gov/install-linux) 
 
 ## Usage
 ### Snakemake config
