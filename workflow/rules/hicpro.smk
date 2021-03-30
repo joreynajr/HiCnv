@@ -25,8 +25,8 @@ rule hicpro_align_only: # Restruct test done
             mkdir -p {params.datadir2}
             abs_r1=$(readlink -f {input.r1})
             abs_r2=$(readlink -f {input.r2})
-            ln -s $abs_r1 {params.datadir2}
-            ln -s $abs_r2 {params.datadir2}
+            ln -f -s $abs_r1 {params.datadir2}
+            ln -f -s $abs_r2 {params.datadir2}
 
             # getting absoluate paths for data and outdirs, required
             # by HiCPro
@@ -35,7 +35,7 @@ rule hicpro_align_only: # Restruct test done
 
             # running without setting -s so that it runs the entire
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s mapping \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -51,7 +51,7 @@ rule hicpro_hic_proc_only: # Restruct test done
     input:
         bam1 = rules.hicpro_align_only.output.bam1,
         bam2 = rules.hicpro_align_only.output.bam2,
-        config = 'refs/hicpro/config-hicpro.hindiii.txt'
+        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs'
     params:
@@ -71,7 +71,7 @@ rule hicpro_hic_proc_only: # Restruct test done
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s proc_hic \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -104,7 +104,7 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s quality_checks \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -137,7 +137,7 @@ rule hicpro_merge_persample_only:
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s merge_persample \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -148,8 +148,8 @@ rule hicpro_merge_persample_only:
 # Build contact maps for the HiC data with HiCPro (single step)
 rule hicpro_build_contact_maps_only: # Restruct test done
     input:
-        vp = 'results/main/{cline}/hicpro/hic_results/results/main/{srr}/{srr}.allValidPairs',
-        config = 'refs/hicpro/config-hicpro.hindiii.txt'
+        vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}.allValidPairs',
+        config = 'results/refs/hicpro/config-hicpro.hindiii.txt'
     output:
         mat = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000.matrix',
         bed = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000_abs.bed'
@@ -170,7 +170,7 @@ rule hicpro_build_contact_maps_only: # Restruct test done
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s build_contact_maps \
                             -i $abs_datadir \
                             -o $abs_outdir \
@@ -204,7 +204,7 @@ rule hicpro_ice_norm_only:
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec software/hicpro_latest_ubuntu.img \
+            singularity exec {config[hicpro_img]} \
                     HiC-Pro -s ice_norm \
                             -i $abs_datadir \
                             -o $abs_outdir \

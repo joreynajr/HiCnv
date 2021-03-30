@@ -173,7 +173,8 @@ CopyEstimate_func <- function(chr.in, gc_limit, map_limit, frag_limit, ref, drop
   i <- 1
   while (i <= length(chr.name)){
     if (is.na(ref)) {
-      segment <- suppressWarnings(changepoint::cpt.mean(count[count$chr==chr.name[i],]$norm.count, method="PELT", minseglen=10))
+      #segment <- suppressWarnings(changepoint::cpt.mean(count[count$chr==chr.name[i],]$norm.count, method="PELT", minseglen=10))
+      segment <- suppressWarnings(changepoint::cpt.mean(count[count$chr==chr.name[i],]$norm.count, method="PELT", minseglen=1)) # JR MOD
       segment <- length(segment@cpts) + 1
       segment_density <- c(segment_density,segment/nrow(count[count$chr==chr.name[i],]))
     }
@@ -244,7 +245,7 @@ PICEstimate <- function(gc_limit, map_limit, frag_limit, prefix, ref) {
     copyEstimate <- CopyEstimate_func(l, gc_limit, map_limit, frag_limit, ref)
     copyEstimate[,"sample"] <- prefix
     
-    write.table(copyEstimate,file=paste0(prefix,".copyNumber.txt"),row.names=F,quote=F,sep="\t") 
+    write.table(copyEstimate,file=paste0(prefix,".copyNumber.txt"),row.names=F,quote=F,sep="\t")
   }
   cat ("Wrote ",paste0(prefix,".copyNumber.txt")," file\n")
 }
@@ -255,7 +256,7 @@ Hmm_func <- function(n,chr_obj) {
   h <- depmixS4::depmix(smooth_count~1,family=gaussian(),nstates=n,data=chr_obj)
   result <- tryCatch({
     f <- depmixS4::fit(h)
-    b <- BIC(f)      
+    b <- BIC(f)
     return(list(f,b))
   }, warning = function(e) {
     cat ("HMM did not converged for ",n,"\n")
@@ -275,7 +276,7 @@ Min_bic <- function(hmm_obj,nstates,chr_obj) {
   while (i < nstates) {
     result <- tryCatch({
       d$bic[[i]] <- hmm_obj[[i]][[2]]
-      d$nstate[[i]] <- i 
+      d$nstate[[i]] <- i
     }, warning = function(e) {
       cat ("No hmm segments for nstate ",i,"\n")
     }, error = function(e) {
@@ -323,7 +324,8 @@ ChromWise_KDE_HMM_Seg <- function(i, chr, bdg, tpm, g, m, f, pfx, ref, hmm_state
   bdg_chr <- bdg[bdg$chr == chr[i],]
   bdg_chr$norm.count <- bdg_chr$norm.count * tpm[tpm$chr==chr[i],]$gain
   if (seg == "yes") {
-    segment <- suppressWarnings(changepoint::cpt.mean(bdg_chr$norm.count, method="PELT", minseglen=10))
+    #segment <- suppressWarnings(changepoint::cpt.mean(bdg_chr$norm.count, method="PELT", minseglen=10))
+    segment <- suppressWarnings(changepoint::cpt.mean(bdg_chr$norm.count, method="PELT", minseglen=1)) # JR MOD
     segment <- CptsInBedFormat(segment)
     bdg_chr[,"start.index"] <- 1:nrow(bdg_chr)
     bdg_chr[,"end.index"]   <- (1:nrow(bdg_chr)) + 1
