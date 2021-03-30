@@ -14,20 +14,20 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 # Process the hg38 reference files
 To download the hg38 reference use (Rule download_hg38_files): 
 <pre>
-snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
+snakemake --profile workflow/profiles/pbs-torque results/refs/hg38/hg38.fa.gz
 </pre>
 
 Then index those reference files using (Rule bowtie2_index_ref_genome):
 <pre>
-snakemake --profile workflow/profiles/local results/refs/hg38/hg38.1.bt2
+snakemake --profile workflow/profiles/pbs-torque results/refs/hg38/hg38.1.bt2
 </pre>
 
 
 Lastly, digest the reference genome in with Mbo1 and HindIII, these will be used
 later in the HiCPro configuration process (Rule digest_reference_genome): 
 <pre>
-snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_mboi_digestion.bed
-snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_hindiii_digestion.bed
+snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzymes/hg38_mboi_digestion.bed
+snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzymes/hg38_hindiii_digestion.bed
 </pre>
 
 # Prepare the HiCPro config
