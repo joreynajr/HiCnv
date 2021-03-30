@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/slundberg/HiCnv/images/vecteezy_soundwave_585767/sarmi1-03.jpg" width="800" />
+  <img src="https://raw.githubusercontent.com/joreynajr/HiCnv/images/vecteezy_soundwave_585767/sarmi1-03.jpg" width="800"/>
 </p>
 
 # HiCnv version 3
