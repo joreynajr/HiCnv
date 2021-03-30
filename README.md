@@ -4,9 +4,7 @@
 
 ---
 
-# HiCnv version 3
-
-HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
+**HiCnv** is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
 facilitate the usage and interface. Currently HiCnv is setup to download 
 SRA files followed by alignment with HiCPro and CNV analysis. 
 
