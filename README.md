@@ -1,5 +1,7 @@
-	![alt text](images/vecteezy_soundwave_585767/sarmi1-03.jpg)
-  
+<p align="center">
+  <img src="https://raw.githubusercontent.com/slundberg/HiCnv/images/vecteezy_soundwave_585767/sarmi1-03.jpg" width="800" />
+</p>
+
 # HiCnv version 3
 
 HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
