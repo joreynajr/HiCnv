@@ -58,8 +58,8 @@ rule digest_reference_genome: # RESTR TEST DONE
         'results/refs/hg38/logs/rule_digest_reference_genome.log'
     shell:
         """
-            {config[python2]} {config[hicpro_utils]}/digest_genome.py -r mboi -o {output.mboi} {input}
-            {config[python2]} {config[hicpro_utils]}/digest_genome.py -r hindiii -o {output.hindiii} {input}
+            {config[python2]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r mboi -o {output.mboi} {input}
+            {config[python2]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r hindiii -o {output.hindiii} {input}
         """
 
 
