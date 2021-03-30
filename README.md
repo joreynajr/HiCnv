@@ -1,3 +1,5 @@
+	![alt text](images/vecteezy_soundwave_585767/sarmi1-03.jpg)
+  
 # HiCnv version 3
 
 HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
