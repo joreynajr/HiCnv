@@ -6,7 +6,7 @@
 
 # HiCnv
 
-### An optimized and flexible workflow for copy number caling from HiC data
+### An optimized and flexible workflow for copy number calling from HiC data
 
 [![DOI](https://img.shields.io/badge/DOI-10.1186%2Fs13059--015--0831--x-lightgrey.svg?style=flat-square)](https://pubmed.ncbi.nlm.nih.gov/29048467/)
 
