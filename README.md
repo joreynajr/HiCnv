@@ -11,6 +11,18 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 - {srr} - SRR ID
 - {cline} - cell line 
 
+# Software dependencies
+Rules within this workflow attempt to facilitate the installation of a few key software but there may still be some user-specific installation steps. The following is a list of required software and packages where applicable:
+- Python 2.7 
+- Python 3.7
+  - snakemake 
+  - ...
+- R 
+  - ...
+- HiCPro Docker img
+- HiCPro Utilities
+- Singularity 
+
 # Process the hg38 reference files
 To download the hg38 reference use (Rule download_hg38_files): 
 <pre>
