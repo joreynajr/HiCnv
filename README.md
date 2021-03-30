@@ -37,37 +37,37 @@ and includes setting `GENOME_FRAGMENT = results/refs/restriction_enzymes/hg38_{r
 # Download SRA paired fastq data
 Uses Rule download_paired_fastq_sra:
 <pre>
-snakemake --profiles profile/pbs-torque results/main/{cline}/sra/{srr}_1.fastq.gz
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/sra/{srr}_1.fastq.gz
 </pre>
 
 # Alignment
-Process your Hi-C fastq files with [HiCPro pipeline](https://github.com/nservant/HiC-Pro) (Rule hicpro_align):
+Process your Hi-C fastq files with [HiCPro pipeline](https://github.com/nservant/HiC-Pro) (Rule hicpro_align_only):
 <pre>
-snakemake --profiles profile/pbs-torque results/main/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam
 </pre>
 
 # Generate the coverage, GC content, mappability and fragment length information file
 Download the mappability file which is used to generate the F_GC_MAP file (Rule download_hg38_mappability):
 <pre>
-snakemake --profiles profile/pbs-torque <<completed documentation coming>>
+snakemake --profile workflow/profiles/pbs-torque results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph
 </pre>
 
 Rule process_refeature: generate a restriction fragment specific file known as the
 *.fragments.F_GC_MAP.bed (Fragment length, GC content and Mappability information file
 file using existings commands.
 <pre>
-snakemake --profiles profile/pbs-torque <<completed documentation coming>>
+snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.sorted.bed
 </pre>
 
 One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file (Rule oned_read_coverage):
 <pre>
-snakemake --profiles profile/pbs-torque `not completed`
+snakemake --profiles workflow/profiles/pbs-torque results/main/{cline}/hicnv/{srr}.perREfragStats
 </pre>
 
 # Run the CNV analysis
 Finally run the CNV analyis which uses scripts/hicnv_v2.R (Rule run_hicnv):
 <pre>
-snakemake --profiles profile/pbs-torque `not completed`
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}_{srr}_hicnv_final.test
 </pre>
 
 # Workflow schema
