@@ -10,7 +10,7 @@ The current version of this HiCnv uses Snakemake to facilitate deployment and im
 
 # Process the hg38 reference files
 To download the hg38 reference use (Rule download_hg38_files): 
-c
+<pre>
 snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
 </pre>
 
