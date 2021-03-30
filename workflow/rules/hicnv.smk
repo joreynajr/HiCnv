@@ -82,7 +82,7 @@ rule make_perREfragStats: # Restruct test done
               # Merge singletons
               # pysam will through some warnings about a missing index
               # but this can be ignored according for forums
-              {config[python2]} {config[hicnv_scripts]}/mergeSAM-singletons.py \
+              {config[python2]} workflow/scripts/mergeSAM-singletons.py \
                             -f {input.fwd_alns} \
                             -r {input.rev_alns} \
                             -o {params.merged_singletons} \
@@ -90,10 +90,10 @@ rule make_perREfragStats: # Restruct test done
                             --single \
                             -q 30 >> {log} 2>&1
 
-              mkdir {params.outdir}
+              mkdir -p {params.outdir}
 
               # Map HiC fragments
-              {config[python2]} {config[hicnv_scripts]}/mapped_2hic_fragments.py \
+              {config[python2]} workflow/scripts/mapped_2hic_fragments.py \
                             -f {input.frag} \
                             -r {params.merged_singletons} \
                             -s 100 \
@@ -119,13 +119,13 @@ rule run_hicnv:
     output:
         'results/main/{cline}/hicnv/{cline}_{srr}_hicnv_final.test'
     log:
-        'results/main/{cline}/logs/run_hicnv_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
     resources:
         ppn = 2
     #shadow: 'minimal'
     shell:
         """
-            {config[R4]} {config[hicnv]} \
+            {config[R4]} workflow/scripts/hicnv_v2.R \
                 --refeature={input.feat} \
                 --coverage={input.cov} \
                 --prefix={wildcards.cline} \
