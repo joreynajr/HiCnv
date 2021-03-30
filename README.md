@@ -1,25 +1,46 @@
 # HiCnv version 3
 
 HiCnv is a pipeline to call CNVs from Hi-C data and is now using Snakemake to
-facilitate the usage and interface of HiCnv.
+facilitate the usage and interface. Currently HiCnv is setup to download 
+SRA files followed by alignment with HiCPro and CNV analysis. 
 
-# Steps: Process the HiC data; generate coverage, GC content, mappability and
-# fragment length information file
+# Process the hg38 reference files
+To download the hg38 reference use: 
+`
+# Rule download_hg38_files
+snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
+`
+Then index those reference files using:
+`
+Rule bowtie2_index_ref_genome
+snakemake --profile workflow/profiles/local results/refs/hg38/hg38.1.bt2
+`
 
-1) Rule download_paired_fastq_sra: Download raw HiC data
+Lastly, digest the reference genome in with Mbo1 and HindIII, these will be used
+later in the HiCPro configuration process.
+`
+# Rule digest_reference_genome
+snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_mboi_digestion.bed
+snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_hindiii_digestion.bed
+
+`
+
+# Prepare the HiCPro config
+The HiCPro configuration file must be setup with the file paths from the digested before. This 
+part has to be done manually and to the specification of HiCPro so please follow this link (https://github.com/nservant/HiC-Pro)
+and store the configuration file within `/results/refs/hicpro/config-hicpro.<<enzyme-name>>.txt`.
+
+# Download SRA paired fastq data
+Rule download_paired_fastq_sra: Download raw HiC data
 
 snakemake --profiles profile/pbs-torque `results/main/{cline}/sra/{srr}_1.fastq.gz`
 
-2) Rule digest_reference_genome: digest hg38 using Mboi and HindIII
-
-snakemake --profiles profile/pbs-torque `completed documentation coming`
-
-3) Follow instructions at within the HiCPro documentation to generate an appropriate config file
-Github link (https://github.com/nservant/HiC-Pro)
-
-4) Rule hicpro_align: Process your Hi-C fastq files with HiCPro pipeline (https://github.com/nservant/HiC-Pro)
+# Alignment
+Rule hicpro_align: Process your Hi-C fastq files with HiCPro pipeline (https://github.com/nservant/HiC-Pro)
 
 snakemake --profiles profile/pbs-torque `results/main/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag`
+
+# Generate the coverage, GC content, mappability and fragment length information file
 
 5) Rule download_hg38_mappability: download the mappability file which is used to
 generate the F_GC_MAP file
@@ -37,13 +58,12 @@ snakemake --profiles profile/pbs-torque `completed documentation coming`
 
 snakemake --profiles profile/pbs-torque `not completed`
 
-8) Rule run_hicnv: Run hicnv_v2.R
+## Run the CNV analysis
 
+`
+# Rule run_hicnv: Run hicnv_v2.R
 snakemake --profiles profile/pbs-torque `not completed`
-
-# Other snakemake rules that are available:
-- Rule download_hg38_files
-- Rule bowtie2_index_ref_genome
+`
 
 # Contact
 
