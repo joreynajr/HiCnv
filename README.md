@@ -33,9 +33,9 @@ Rules within this workflow attempt to facilitate the installation of a few key s
 ### Snakemake config
 The Snakemake config file is located within `config/config.yaml`, please set the following variables (using the YAML format already provided) with paths to the correponding resources or software:
 <pre>
-R4: <path to R 4.X.X with library dependencies installed>
-python2: <path to Python 2.7 with package dependencies installedd>
-hicpro_dir: <path to the main HiCPro installation directory> 
+R4: 	&#60;path to R 4.X.X with library dependencies installed&#62;
+python2: 	&#60;path to Python 2.7 with package dependencies installed&#62;
+hicpro_dir: 	&#60;path to the main HiCPro installation directory&#62;
 </pre>
 
 ### Process the hg38 reference files
