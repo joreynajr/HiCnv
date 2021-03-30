@@ -61,7 +61,7 @@ snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzyme
 
 One dimensionalize your HiC data using pre-existing "scripts Read_coverage_generation/run_1DReadCoverage.pl" and create the *.perREfragStats file (Rule oned_read_coverage):
 <pre>
-snakemake --profiles workflow/profiles/pbs-torque results/main/{cline}/hicnv/{srr}.perREfragStats
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{srr}.perREfragStats
 </pre>
 
 # Run the CNV analysis
