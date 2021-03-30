@@ -29,7 +29,7 @@ snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg3
 
 # Prepare the HiCPro config
 The HiCPro configuration file must be setup with the file paths from the digested before. This 
-part has to be done manually and to the specification of HiCPro so please follow this link (https://github.com/nservant/HiC-Pro)
+part has to be done manually and to the specification of [HiCPro](https://github.com/nservant/HiC-Pro)
 and store the configuration file within `/results/refs/hicpro/config-hicpro.{enzyme_name}.txt`.
 
 # Download SRA paired fastq data
