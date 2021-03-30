@@ -79,9 +79,7 @@ Download the mappability file which is used to generate the F_GC_MAP file (Rule 
 snakemake --profile workflow/profiles/pbs-torque results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph
 </pre>
 
-Rule process_refeature: generate a restriction fragment specific file known as the
-*.fragments.F_GC_MAP.bed (Fragment length, GC content and Mappability information file
-file using existings commands.
+Generate a restriction fragment specific file with the format *.fragments.F_GC_MAP.bed (Fragment length, GC content and Mappability information file, uses existings commands form HiCnv v2.0) (Rule process_refeature):
 <pre>
 snakemake --profile workflow/profiles/pbs-torque results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.sorted.bed
 </pre>
