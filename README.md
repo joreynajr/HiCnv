@@ -14,6 +14,7 @@ To download the hg38 reference use:
 # Rule download_hg38_files
 snakemake --profile workflow/profiles/local results/refs/hg38/hg38.fa.gz
 `
+
 Then index those reference files using:
 `
 Rule bowtie2_index_ref_genome
