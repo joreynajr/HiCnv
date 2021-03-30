@@ -21,16 +21,16 @@ snakemake --profile workflow/profiles/local results/refs/hg38/hg38.1.bt2
 
 
 Lastly, digest the reference genome in with Mbo1 and HindIII, these will be used
-later in the HiCPro configuration process (# Rule digest_reference_genome): 
+later in the HiCPro configuration process (Rule digest_reference_genome): 
 <pre>
 snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_mboi_digestion.bed
 snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg38_hindiii_digestion.bed
 </pre>
 
 # Prepare the HiCPro config
-The HiCPro configuration file must be setup with the file paths from the digested before. This 
-part has to be done manually and to the specification of [HiCPro](https://github.com/nservant/HiC-Pro)
-and store the configuration file within `/results/refs/hicpro/config-hicpro.{enzyme_name}.txt`.
+The HiCPro configuration file must be setup using digested files from the previous step. This step
+has to be done manually and as specified by [HiCPro](https://github.com/nservant/HiC-Pro). Once completed store
+the configuration file within `/results/refs/hicpro/config-hicpro.{enzyme_name}.txt`.
 
 # Download SRA paired fastq data
 Uses Rule download_paired_fastq_sra:
