@@ -28,9 +28,9 @@ snakemake --profile workflow/profiles/local results/refs/restriction_enzymes/hg3
 </pre>
 
 # Prepare the HiCPro config
-The HiCPro configuration file must be setup using digested files from the previous step. This step
-has to be done manually and as specified by [HiCPro](https://github.com/nservant/HiC-Pro). Once completed store
-the configuration file within `/results/refs/hicpro/config-hicpro.{re}.txt`, where re is the corresponding restriction enzyme.
+The HiCPro configuration file must be setup manually and as specified by [HiCPro](https://github.com/nservant/HiC-Pro)
+and includes using digested files from the previous step, this means setting `GENOME_FRAGMENT = results/refs/restriction_enzymes/hg38_{re}_digestion.bed`. 
+Once completed store the configuration file within `/results/refs/hicpro/config-hicpro.{re}.txt`, where re is the corresponding restriction enzyme.
 
 # Download SRA paired fastq data
 Uses Rule download_paired_fastq_sra:
