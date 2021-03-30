@@ -37,13 +37,13 @@ and includes setting `GENOME_FRAGMENT = results/refs/restriction_enzymes/hg38_{r
 # Download SRA paired fastq data
 Uses Rule download_paired_fastq_sra:
 <pre>
-snakemake --profiles profile/pbs-torque `results/main/{cline}/sra/{srr}_1.fastq.gz
+snakemake --profiles profile/pbs-torque results/main/{cline}/sra/{srr}_1.fastq.gz
 </pre>
 
 # Alignment
 Process your Hi-C fastq files with [HiCPro pipeline](https://github.com/nservant/HiC-Pro) (Rule hicpro_align):
 <pre>
-snakemake --profiles profile/pbs-torque `results/main/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag
+snakemake --profiles profile/pbs-torque results/main/{cline}/{srr}/hicpro/{cline}.{srr}.ran.flag
 </pre>
 
 # Generate the coverage, GC content, mappability and fragment length information file
