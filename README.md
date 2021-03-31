@@ -32,6 +32,7 @@ Rules within this workflow attempt to facilitate the installation of a few key s
   - snakemake 
   - ...
 - R 
+  - changepoint ([link](https://cran.r-project.org/web/packages/changepoint/changepoint.pdf))
   - ...
 - HiCPro - Git download the HiCPro repository using: `git clone git@github.com:nservant/HiC-Pro.git`
 - HiCPro Docker img (installed by workflow)
