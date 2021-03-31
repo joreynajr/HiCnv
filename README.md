@@ -21,9 +21,12 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 
 ## Authors
 
-mod: jreyna@lji.org (Joaquin Reyna)
+mod: jreyna@lji.org (Joaquin Reyna Bsc)
 
-orig: abhijit@lji.org (Abhijit Chakraborty)
+orig: abhijit@lji.org (Abhijit Chakraborty PhD)
+
+orig: ferhatay@lji.org (Ferhat Ay PhD)
+
 
 ## Software dependencies
 Rules within this workflow attempt to facilitate the installation of a few key software but there may still be some user-specific installation steps. The following is a list of required software and packages where applicable:
