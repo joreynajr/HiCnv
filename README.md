@@ -21,7 +21,7 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 
 ## Authors
 
-mod: jreyna@lji.org (Joaquin Reyna Bsc)
+mod: jreyna@lji.org (Joaquin Reyna BSc)
 
 orig: abhijit@lji.org (Abhijit Chakraborty PhD)
 
