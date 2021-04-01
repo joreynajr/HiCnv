@@ -104,7 +104,7 @@ snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{srr
 ### Run the CNV analysis
 Finally run the CNV analyis which uses scripts/hicnv_v2.R (Rule run_hicnv):
 <pre>
-snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}_{srr}_hicnv_final.test
+snakemake --profile results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
 
 ### Run the double minute analysis (in progress)
@@ -116,7 +116,7 @@ snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/...
 ## Run the HiCnv workflow the _fast way_
 After installing all the necessary software, and setting up the configurations files you can simply run (Rule run_hicnv):
 <pre>
-snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}_{srr}_hicnv_final.test
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
 Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
 
