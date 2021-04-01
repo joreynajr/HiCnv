@@ -59,7 +59,7 @@ rule process_refeature: # Restruct test done
 
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
-rule make_perREfragStats: # Restruct test done
+rule make_perREfragStats:
     input:
         fwd_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
         rev_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam',
@@ -67,6 +67,8 @@ rule make_perREfragStats: # Restruct test done
         fgc_map = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.bed'
     output:
         frag_stats = 'results/main/{cline}/hicnv/{srr}.perREfragStats'
+    wildcard_constraints:
+        srr = '[A-Z]+'
     params:
         merged_singletons = 'results/main/{cline}/hicnv/{srr}.bwt2pairs.withSingles.mapq30.bam',
         outdir = 'results/main/{cline}/hicnv/{srr}_allMap2FragmentsOutput',
@@ -107,6 +109,26 @@ rule make_perREfragStats: # Restruct test done
               cat {params.outdir}/{wildcards.srr}.bwt2pairs.withSingles.mapq30.perREfragStats \
                             | sort -k1,1 -k2,2n > {output} 2> {log}
           """
+
+
+# Filtering for chromosomes 1-22 + X.
+# The main hicnv_v2.R script will not work because there are too
+# few datapoints generated for chrM and chrY should also be excluded.
+rule filter_for_main_chrs:
+    input:
+        frag_stats = rules.make_perREfragStats.output.frag_stats,
+        chr_list = 'resources/chromosome_lists/main_chrs.txt'
+    output:
+        frag_stats = 'results/main/{cline}/hicnv/{srr}.chrflt.perREfragStats'
+    log:
+        'results/main/{cline}/logs/rule_filter_for_main_chrs_{cline}_{srr}.log'
+    shell:
+        """
+            python workflow/scripts/filter_chrs_from_bed.py \
+                --bed-like {input.frag_stats} \
+                --include-list {input.chr_list} \
+                -o {output}
+        """
 
 
 # Run HiCnv a chromosome at a time
