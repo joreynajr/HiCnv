@@ -41,6 +41,7 @@ Rules within this workflow attempt to facilitate the installation of a few key s
 - HiCPro - Git download the HiCPro repository using: `git clone git@github.com:nservant/HiC-Pro.git`
 - HiCPro Docker img (installed by workflow)
 - Singularity ([link](https://singularity.lbl.gov/install-linux))
+- fasterq-dump ([link](https://github.com/ncbi/sra-tools/wiki/HowTo:-fasterq-dump))
 
 ## Usage
 ### Snakemake config
