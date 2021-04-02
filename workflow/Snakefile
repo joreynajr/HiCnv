@@ -78,7 +78,7 @@ rule download_paired_fastq_sra:
         outdir = 'results/main/{cline}/sra/',
         meta = '{srr}.meta.csv'
     resources:
-        mem_mb = 8000,
+        mem_mb = 16000,
         nodes = 1,
         ppn = 4
     shell:
