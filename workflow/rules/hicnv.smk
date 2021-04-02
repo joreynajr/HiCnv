@@ -57,6 +57,26 @@ rule process_refeature: # Restruct test done
         """
 
 
+# Filtering for chromosomes 1-22 + X.
+# The main hicnv_v2.R script will not work because there are too
+# few datapoints generated for chrM and chrY should also be excluded.
+rule filter_refeature_for_main_chrs:
+    input:
+        refeat = rules.process_refeature.output.sorted_feat_map,
+        chr_list = 'resources/chromosome_lists/main_chrs.txt'
+    output:
+        refeat = 'results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.sorted.chrflt.bed'
+    log:
+        'results/refs/restriction_enzymes/logs/rule_filter_refeature_for_main_chrs_{re}.log'
+    shell:
+        """
+            python workflow/scripts/filter_chrs_from_bed.py \
+                --bed-like {input.refeat} \
+                --include-list {input.chr_list} \
+                -o {output} >> {log} 2>&1
+        """
+
+
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule make_perREfragStats:
@@ -68,7 +88,7 @@ rule make_perREfragStats:
     output:
         frag_stats = 'results/main/{cline}/hicnv/{srr}.perREfragStats'
     wildcard_constraints:
-        srr = '[A-Z]+'
+        srr = '[A-Z0-9]+'
     params:
         merged_singletons = 'results/main/{cline}/hicnv/{srr}.bwt2pairs.withSingles.mapq30.bam',
         outdir = 'results/main/{cline}/hicnv/{srr}_allMap2FragmentsOutput',
@@ -114,44 +134,50 @@ rule make_perREfragStats:
 # Filtering for chromosomes 1-22 + X.
 # The main hicnv_v2.R script will not work because there are too
 # few datapoints generated for chrM and chrY should also be excluded.
-rule filter_for_main_chrs:
+rule filter_perREfragStats_for_main_chrs:
     input:
         frag_stats = rules.make_perREfragStats.output.frag_stats,
         chr_list = 'resources/chromosome_lists/main_chrs.txt'
     output:
         frag_stats = 'results/main/{cline}/hicnv/{srr}.chrflt.perREfragStats'
+    wildcard_constraints:
+        srr = '[A-Z0-9]+'
     log:
-        'results/main/{cline}/logs/rule_filter_for_main_chrs_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}_{srr}.log'
     shell:
         """
             python workflow/scripts/filter_chrs_from_bed.py \
                 --bed-like {input.frag_stats} \
                 --include-list {input.chr_list} \
-                -o {output}
+                -o {output} >> {log} 2>&1
         """
 
 
 # Run HiCnv a chromosome at a time
 #rules.make_perREfragStats.output.frag_stats
-#rules.process_refeature.output.sorted_feat_map,
+#rules.process_refeature.output.sorted_feat_map
 rule run_hicnv:
     input:
-        feat = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.bed',
-        cov = rules.make_perREfragStats.output.frag_stats
+        feat = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.chrflt.bed',
+        cov = rules.filter_perREfragStats_for_main_chrs.output.frag_stats
+    params:
+        outdir = directory('results/main/{cline}/hicnv/')
     output:
-        'results/main/{cline}/hicnv/{cline}_{srr}_hicnv_final.test'
+        'results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
     log:
         'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
     resources:
-        ppn = 2
+        ppn = 4
     #shadow: 'minimal'
     shell:
         """
             {config[R4]} workflow/scripts/hicnv_v2.R \
                 --refeature={input.feat} \
                 --coverage={input.cov} \
-                --prefix={wildcards.cline} \
+                --prefix={wildcards.cline}.{wildcards.srr} \
                 --fragcutoff=150 \
-                --refchrom=1 \
+                --refchrom=chr1 \
                 --cpu {resources.ppn} >> {log} 2>&1
+
+            mv {wildcards.cline}.{wildcards.srr}_hicnv/ {params.outdir}
         """

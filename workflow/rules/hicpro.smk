@@ -10,11 +10,15 @@ rule download_hicpro_singularity_img:
             wget -O {output} https://zerkalo.curie.fr/partage/HiC-Pro/singularity_images/hicpro_latest_ubuntu.img
         """
 
+
 # Align the HiC data
 rule hicpro_align_only:
     input:
         r1 = rules.download_paired_fastq_sra.output.r1,
         r2 = rules.download_paired_fastq_sra.output.r2,
+        gs = rules.download_hg38_files.output.genome_sizes,
+        digestion = rules.digest_reference_genome.output.hindiii,
+        bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:

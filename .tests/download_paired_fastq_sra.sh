@@ -8,4 +8,5 @@ do
     outputs="$output "
 done
 #snakemake --profile workflow/profiles/local $@ $outputs
+echo "snakemake --profile workflow/profiles/pbs-torque $@ $outputs"
 snakemake --profile workflow/profiles/pbs-torque $@ $outputs

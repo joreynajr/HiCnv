@@ -2,7 +2,7 @@ configfile: 'config/config.yaml'
 #report: "report/workflow.rst"
 
 # Downloading hg38 files as needed
-rule download_hg38_files: # RESTR TEST DONE
+rule download_hg38_files:
     params:
         centromeres = 'results/refs/hg38/centromeres.txt.gz',
         gaps = 'results/refs/hg38/gap.txt.gz'
@@ -30,7 +30,7 @@ rule download_hg38_files: # RESTR TEST DONE
 
 # Index the reference genome (GRCh38)
 # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#indexing-a-reference-genome
-rule bowtie2_index_ref_genome: # RESTR TEST DONE
+rule bowtie2_index_ref_genome:
     input:
         rules.download_hg38_files.output.genome_unzipped
     output:
@@ -48,7 +48,7 @@ rule bowtie2_index_ref_genome: # RESTR TEST DONE
 # Digesting the reference genome with different RE's, for now
 # I am including MboI, and HindIII. I followed the following instructions:
 # https://github.com/nservant/HiC-Pro/blob/master/doc/UTILS.md.
-rule digest_reference_genome: # RESTR TEST DONE
+rule digest_reference_genome:
     input:
         'results/refs/hg38/hg38.fa'
     output:
@@ -66,7 +66,7 @@ rule digest_reference_genome: # RESTR TEST DONE
 # rule to download sra files which derived from paired sequencing
 # using the grabseqs tool and modified code from the hisss snakemake pipeline
 # https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
-rule download_paired_fastq_sra: # RESTR TEST DONE
+rule download_paired_fastq_sra:
     output:
         r1 = 'results/main/{cline}/sra/{srr}_1.fastq.gz',
         r2 = 'results/main/{cline}/sra/{srr}_2.fastq.gz',

@@ -8,6 +8,7 @@ do
     outputs+="$output "
     break
 done
-echo $outputs
+#echo $outputs
+echo "snakemake --profile  workflow/profiles/local $@ $outputs"
 snakemake --profile  workflow/profiles/local $@ $outputs
 #snakemake --profile workflow/profiles/pbs-torque $@ $outputs
