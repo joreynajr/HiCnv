@@ -33,6 +33,7 @@ Rules within this workflow attempt to facilitate the installation of a few key s
 - Python 2.7 
 - Python 3.7
   - snakemake 
+  - grabseqs ([link](https://github.com/louiejtaylor/grabseqs))
   - ...
 - R 
   - changepoint ([link](https://cran.r-project.org/web/packages/changepoint/changepoint.pdf))
