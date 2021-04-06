@@ -32,14 +32,17 @@ orig: ferhatay@lji.org (Ferhat Ay PhD)
 Rules within this workflow attempt to facilitate the installation of a few key software but there may still be some user-specific installation steps. The following is a list of required software and packages where applicable:
 - Python 2.7 
 - Python 3.7
-  - snakemake 
+  - snakemake ([link](https://snakemake.readthedocs.io/en/stable/))
+  - grabseqs ([link](https://github.com/louiejtaylor/grabseqs))
   - ...
 - R 
   - changepoint ([link](https://cran.r-project.org/web/packages/changepoint/changepoint.pdf))
+  - bioconductor ([link](https://bioconductor.org/install/))
   - ...
 - HiCPro - Git download the HiCPro repository using: `git clone git@github.com:nservant/HiC-Pro.git`
 - HiCPro Docker img (installed by workflow)
 - Singularity ([link](https://singularity.lbl.gov/install-linux))
+- fasterq-dump ([link](https://github.com/ncbi/sra-tools/wiki/HowTo:-fasterq-dump))
 
 ## Usage
 ### Snakemake config
