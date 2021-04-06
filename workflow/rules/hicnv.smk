@@ -77,14 +77,22 @@ rule filter_refeature_for_main_chrs:
         """
 
 
+# get the restriction enzyme digestion files
+def re_fgc_map_file(wildcards):
+    sample_re = load_dict()
+    re = sample_dict[wildcards.cline]
+    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.bed'.format(re)
+    return(config)
+
+
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule make_perREfragStats:
     input:
         fwd_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
         rev_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam',
-        frag = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.bed',
-        fgc_map = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.bed'
+        frag = re_digestion_file,
+        fgc_map = re_fgc_map_file
     output:
         frag_stats = 'results/main/{cline}/hicnv/{srr}.perREfragStats'
     wildcard_constraints:

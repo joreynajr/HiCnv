@@ -10,6 +10,28 @@ rule download_hicpro_singularity_img:
             wget -O {output} https://zerkalo.curie.fr/partage/HiC-Pro/singularity_images/hicpro_latest_ubuntu.img
         """
 
+# load sample to re dict
+def load_dict():
+    with open('config/sample_re.tsv') as fr:
+        d = dict()
+        for line in fr:
+            cline, re = line.strip().split()
+            d[cline] = re
+        return(d)
+
+# get the restriction enzyme digestion files
+def re_config_file(wildcards):
+    sample_re = load_dict()
+    re = sample_dict[wildcards.cline]
+    config = 'results/refs/hicpro/config-hicpro.{re}.txt'.format(re)
+    return(config)
+
+# get the restriction enzyme digestion files
+def re_digestion_file(wildcards):
+    sample_re = load_dict()
+    re = sample_dict[wildcards.cline]
+    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.bed'.format(re)
+    return(config)
 
 # Align the HiC data
 rule hicpro_align_only:
@@ -17,9 +39,9 @@ rule hicpro_align_only:
         r1 = rules.download_paired_fastq_sra.output.r1,
         r2 = rules.download_paired_fastq_sra.output.r2,
         gs = rules.download_hg38_files.output.genome_sizes,
-        digestion = rules.digest_reference_genome.output.hindiii,
+        digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
@@ -66,7 +88,7 @@ rule hicpro_hic_proc_only:
     input:
         bam1 = rules.hicpro_align_only.output.bam1,
         bam2 = rules.hicpro_align_only.output.bam2,
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs'
@@ -100,7 +122,7 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
     input:
         bam1 = rules.hicpro_align_only.output.bam1,
         bam2 = rules.hicpro_align_only.output.bam2,
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         qc = directory('results/main/{cline}/hicpro/hic_results/pic/{srr}')
@@ -133,7 +155,7 @@ rule hicpro_quality_checks_only: # Restruct test partial complete
 rule hicpro_merge_persample_only:
     input:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs',
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}.allValidPairs',
@@ -167,7 +189,7 @@ rule hicpro_merge_persample_only:
 rule hicpro_build_contact_maps_only:
     input:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}.allValidPairs',
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         mat = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000.matrix',
@@ -202,7 +224,7 @@ rule hicpro_ice_norm_only:
     input:
         mat = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000.matrix',
         bed = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/raw/10000/{srr}_10000_abs.bed',
-        config = ancient('results/refs/hicpro/config-hicpro.hindiii.txt'),
+        config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         matrix = 'results/main/{cline}/hicpro/hic_results/matrix/{srr}/iced/10000/{srr}_10000_iced.matrix',
