@@ -197,5 +197,6 @@ rule run_hicnv:
                 --refchrom=chr1 \
                 --cpu {resources.ppn} >> {log} 2>&1
 
-            mv {wildcards.cline}.{wildcards.srr}_hicnv/ {params.outdir}
+            mkdir -p {params.outdir} >> {log} 2>&1
+            mv {wildcards.cline}.{wildcards.srr}_hicnv/ {params.outdir} >> {log} 2>&1
         """
