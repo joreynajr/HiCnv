@@ -139,8 +139,6 @@ Lastly, run the following snakemake command to run all Snakemake rules and ultim
 <pre>
 snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}.{lib}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
-Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
-
 
 ## Running on a cluster system
 The HiCnv workflow has been set up to work with PBS-Torque or on a local machine, the workflow will automatically submit each rule as a PBS-Torque job. To include your job management  system you must create a profile as specified [here](https://snakemake.readthedocs.io/en/stable/executing/cluster.html). To run with this workflow make sure to save your profile is under `workflow/profiles`. Ideally you would start from the main directory and do the following:
