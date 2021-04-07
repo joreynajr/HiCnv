@@ -80,7 +80,7 @@ rule filter_refeature_for_main_chrs:
 # get the restriction enzyme digestion files
 def re_fgc_map_file(wildcards):
     sample_re = load_dict()
-    re = sample_dict[wildcards.cline]
+    re = sample_re[wildcards.cline]
     config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.bed'.format(re)
     return(config)
 
@@ -139,6 +139,8 @@ rule make_perREfragStats:
           """
 
 
+
+
 # Filtering for chromosomes 1-22 + X.
 # The main hicnv_v2.R script will not work because there are too
 # few datapoints generated for chrM and chrY should also be excluded.
@@ -161,12 +163,20 @@ rule filter_perREfragStats_for_main_chrs:
         """
 
 
+# get the restriction enzyme digestion files
+def re_fgc_map_sorted_chrflt_file(wildcards):
+    sample_re = load_dict()
+    re = sample_re[wildcards.cline]
+    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.chrflt.bed'.format(re)
+    return(config)
+
+
 # Run HiCnv a chromosome at a time
 #rules.make_perREfragStats.output.frag_stats
 #rules.process_refeature.output.sorted_feat_map
 rule run_hicnv:
     input:
-        feat = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.extended.fragment.gc.map.sorted.chrflt.bed',
+        feat = re_fgc_map_sorted_chrflt_file,
         cov = rules.filter_perREfragStats_for_main_chrs.output.frag_stats
     params:
         outdir = directory('results/main/{cline}/hicnv/')

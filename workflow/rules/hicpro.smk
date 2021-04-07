@@ -20,17 +20,17 @@ def load_dict():
         return(d)
 
 # get the restriction enzyme digestion files
-def re_config_file(wildcards):
+def re_digestion_file(wildcards):
     sample_re = load_dict()
-    re = sample_dict[wildcards.cline]
-    config = 'results/refs/hicpro/config-hicpro.{re}.txt'.format(re)
+    re = sample_re[wildcards.cline]
+    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.bed'.format(re)
     return(config)
 
 # get the restriction enzyme digestion files
-def re_digestion_file(wildcards):
+def re_config_file(wildcards):
     sample_re = load_dict()
-    re = sample_dict[wildcards.cline]
-    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.bed'.format(re)
+    re = sample_re[wildcards.cline]
+    config = 'results/refs/hicpro/config-hicpro.{}.txt'.format(re)
     return(config)
 
 # Align the HiC data
