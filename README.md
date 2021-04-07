@@ -21,7 +21,7 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 - `{acc}` - short for accession and is a generalization for the srr and lib wildcards (not to be confused with Encode accessions, this definition is internal for HiCnv)
 - `{cline}` - cell line 
 
-UPDATE: HiCnv now supports downloading with ENCODE, instructions are given down below. 
+UPDATE: HiCnv now supports downloading with ENCODE, instructions are given down below in **Run HiCnv with ENCODE data**. 
 
 ## Authors
 
@@ -127,8 +127,7 @@ snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cli
 </pre>
 Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
 
-## Run the HiCnv with ENCODE data
-After installing all the necessary software, and setting up the configurations files you can simply run (Rule run_hicnv):
+## Run HiCnv with ENCODE data
 As always, add your new sample to the samplesheet. 
 <pre>
 vim config/sample_re.tsv
