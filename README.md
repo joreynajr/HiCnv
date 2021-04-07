@@ -17,6 +17,8 @@
 The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs.io/en/stable/) to facilitate deployment and improve reproducibility. Currently, HiCnv is setup to download SRA files followed by alignment with HiCPro and CNV analysis. PLEASE READ: Snakemake uses a system of templating which I will be using in this documentation, templating refers to the use of `{variable_name}` to generalize a file path and common templates I will use include:
 - `{re}` - restriction enzyme
 - `{srr}` - SRR ID
+- `{lib}` - LIB ID from ENCODE (or equivalent)
+- `{acc}` - short for accession and is a generalization for the srr and lib wildcards (not to be confused with Encode accessions, this definition is internal for HiCnv)
 - `{cline}` - cell line 
 
 ## Authors
@@ -50,7 +52,7 @@ The Snakemake config file is located within `config/config.yaml`, please set the
 <pre>
 R4: &#60;path to R 4.X.X with library dependencies installed&#62;
 python2: &#60;path to Python 2.7 with package dependencies installed&#62;
-hicpro_dir: &#60;path to the main HiCPro installation directory&#62;
+hicpro_dir: &#60;path to the main HiCPro installation directory&#62; (don't need complete installation with `make` just `git clone git@github.com:nservant/HiC-Pro.git`)
 </pre>
 
 ### Process the hg38 reference files
