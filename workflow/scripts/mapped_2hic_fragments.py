@@ -10,8 +10,9 @@
 
 """
 Script to keep only valid 3C products - DE and SC are removed
-- On 03/05/2016 Ferhat modified this file starting from ~/bin/HiC-Pro_2.7.2b/scripts/mapped_2hic_fragments.py
-  I made it sucht that it reports number of contacts per RE site in different categories
+- On 03/05/2016 Ferhat modified this file starting from
+~/bin/HiC-Pro_2.7.2b/scripts/mapped_2hic_fragments.py
+I made it such that it reports number of contacts per RE site in different categories
 """
 
 import getopt
@@ -87,7 +88,7 @@ def get_read_strand(read):
 def isIntraChrom(read1, read2):
     """
     Return true is the reads pair is intrachromosomal
-    
+
     read1 : [AlignedRead]
     read2 : [AlignedRead]
 

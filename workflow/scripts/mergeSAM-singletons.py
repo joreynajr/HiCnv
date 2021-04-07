@@ -1,16 +1,17 @@
 #!/usr/bin/python
 
-## HiC-Pro
-## Copyright (c) 2015 Institut Curie                               
-## Author(s): Nicolas Servant, Eric Viara
-## Contact: nicolas.servant@curie.fr
-## This software is distributed without any guarantee under the terms of the BSD-3 licence.
-## See the LICENCE file for details
+# # HiC-Pro
+# # Copyright (c) 2015 Institut Curie
+# # Author(s): Nicolas Servant, Eric Viara
+# # Contact: nicolas.servant@curie.fr
+# # This software is distributed without any guarantee under the terms of
+# the BSD-3 licence. See the LICENCE file for details
 
 
 """
 Script to pair 2 SAM/BAM files into one PE BAM
-- On 03/05/16 Ferhat made changes starting from ~/bin/HiC-Pro_2.7.2b/scripts/mergeSAM.py 
+- On 03/05/16 Ferhat made changes starting from
+~/bin/HiC-Pro_2.7.2b/scripts/mergeSAM.py
 to make singletons possible to be reported
 """
 
@@ -197,29 +198,29 @@ if __name__ == "__main__":
         print "## report_multi=", report_multi
         print "## verbose=", verbose
 
-    ## Initialize variables
+    # # Initialize variables
     tot_pairs_counter = 0
     multi_pairs_counter = 0
     uniq_pairs_counter = 0
-    unmapped_pairs_counter = 0 
+    unmapped_pairs_counter = 0
     lowq_pairs_counter = 0
     multi_singles_counter = 0
     uniq_singles_counter = 0
     lowq_singles_counter = 0
 
-    #local_counter = 0
+    # local_counter = 0
     paired_reads_counter = 0
     singleton_counter = 0
     reads_counter = 0
     r1 = None
     r2 = None
 
-    ## Reads are 0-based too (for both SAM and BAM format)
-    ## Loop on all reads
+    # # Reads are 0-based too (for both SAM and BAM format)
+    # # Loop on all reads
     if verbose:
         print "## Merging forward and reverse tags ..."
-  
-    with  pysam.Samfile(R1file, "rb") as hr1,  pysam.Samfile(R2file, "rb") as hr2: 
+
+    with  pysam.Samfile(R1file, "rb") as hr1,  pysam.Samfile(R2file, "rb") as hr2:
         if output == "-":
             outfile = pysam.AlignmentFile(output, "w", template=hr1)
         else:
@@ -227,10 +228,10 @@ if __name__ == "__main__":
         for r1, r2 in izip(hr1.fetch(until_eof=True), hr2.fetch(until_eof=True)):
             reads_counter +=1
 
-            #print r1
-            #print r2
-            #print hr1.getrname(r1.tid)
-            #print hr2.getrname(r2.tid)
+            # print r1
+            # print r2
+            # print hr1.getrname(r1.tid)
+            # print hr2.getrname(r2.tid)
 
             if (reads_counter % 1000000 == 0 and verbose):
                 print "##", reads_counter
@@ -310,7 +311,7 @@ if __name__ == "__main__":
         else:
             statfile = re.sub('.bam', '.pairstat', output)
         handle_stat = open(statfile, 'w')
-            
+
         handle_stat.write("Total_pairs_processed\t" + str(reads_counter) + "\t" + str(round(float(reads_counter)/float(reads_counter)*100,3)) + "\n")
         handle_stat.write("Unmapped_pairs\t" + str(unmapped_pairs_counter) + "\t" + str(round(float(unmapped_pairs_counter)/float(reads_counter)*100,3)) + "\n")
         handle_stat.write("Pairs_with_Singleton\t" + str(singleton_counter) + "\t" + str(round(float(singleton_counter)/float(reads_counter)*100,3)) + "\n")
@@ -319,7 +320,7 @@ if __name__ == "__main__":
         handle_stat.write("Multiple_pairs_alignments\t" + str(multi_pairs_counter) + "\t" + str(round(float(multi_pairs_counter)/float(reads_counter)*100,3)) + "\n")
         #handle_stat.write("Local_alignments\t" + str(local_counter) + "\t" + str(round(float(local_counter)/float(reads_counter)*100,3)) + "\n")
         handle_stat.write("Reported_pairs\t" + str(tot_pairs_counter) + "\t" + str(round(float(tot_pairs_counter)/float(reads_counter)*100,3)) + "\n")
-     
+
         handle_stat.write("Low_qual_singles\t" + str(lowq_singles_counter) + "\t" + str(round(float(lowq_singles_counter)/float(reads_counter)*100,3)) + "\n")
         handle_stat.write("Unique_singles_alignments\t" + str(uniq_singles_counter) + "\t" + str(round(float(uniq_singles_counter)/float(reads_counter)*100,3)) + "\n")
         handle_stat.write("Multiple_singles_alignments\t" + str(multi_singles_counter) + "\t" + str(round(float(multi_singles_counter)/float(reads_counter)*100,3)) + "\n")

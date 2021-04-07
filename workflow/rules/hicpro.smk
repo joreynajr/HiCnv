@@ -10,6 +10,7 @@ rule download_hicpro_singularity_img:
             wget -O {output} https://zerkalo.curie.fr/partage/HiC-Pro/singularity_images/hicpro_latest_ubuntu.img
         """
 
+
 # load sample to re dict
 def load_dict():
     with open('config/sample_re.tsv') as fr:
@@ -19,6 +20,7 @@ def load_dict():
             d[cline] = re
         return(d)
 
+
 # get the restriction enzyme digestion files
 def re_digestion_file(wildcards):
     sample_re = load_dict()
@@ -26,12 +28,14 @@ def re_digestion_file(wildcards):
     config = 'results/refs/restriction_enzymes/hg38_{}_digestion.bed'.format(re)
     return(config)
 
-# get the restriction enzyme digestion files
+
+# get the restriction enzyme hicpro config
 def re_config_file(wildcards):
     sample_re = load_dict()
     re = sample_re[wildcards.cline]
     config = 'results/refs/hicpro/config-hicpro.{}.txt'.format(re)
     return(config)
+
 
 # Align the HiC data
 rule hicpro_align_only:
@@ -53,7 +57,7 @@ rule hicpro_align_only:
     resources:
         nodes = 1,
         ppn = 4,
-        mem_mb = 64000
+        mem_mb = 80000
     log:
         'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
     shell:
