@@ -63,19 +63,21 @@ rule digest_reference_genome:
         """
 
 
-# rule to download sra files which derived from paired sequencing
+# rule to download sra fastq files which derived from paired sequencing
 # using the grabseqs tool and modified code from the hisss snakemake pipeline
 # https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
 rule download_paired_fastq_sra:
     output:
-        r1 = 'results/main/{cline}/sra/{srr}_1.fastq.gz',
-        r2 = 'results/main/{cline}/sra/{srr}_2.fastq.gz',
-        meta = 'results/main/{cline}/sra/{srr}.meta.csv'
+        r1 = 'results/main/{cline}/reads/{srr}_1.fastq.gz',
+        r2 = 'results/main/{cline}/reads/{srr}_2.fastq.gz',
+        meta = 'results/main/{cline}/reads/{srr}.meta.csv'
+    wildcard_constraints:
+        srr = 'SRR[A-Za-z0-9]{7}'
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
     shadow: 'shallow'
     params:
-        outdir = 'results/main/{cline}/sra/',
+        outdir = 'results/main/{cline}/reads/',
         meta = '{srr}.meta.csv'
     resources:
         mem_mb = 16000,
@@ -88,6 +90,30 @@ rule download_paired_fastq_sra:
                         -r 4 \
                         -t {resources.ppn} \
                         {wildcards.srr} >> {log} 2>&1
+        """
+
+
+# rule to download fastq files from ENCODE which derived from paired sequencing
+rule download_paired_fastq_encode:
+    input:
+        lib_file = 'results/main/{cline}/reads/{cline}.{lib}.tsv'
+    output:
+        r1 = 'results/main/{cline}/reads/{lib}_1.fastq.gz',
+        r2 = 'results/main/{cline}/reads/{lib}_2.fastq.gz'
+    wildcard_constraints:
+        lib = 'ENC[A-Za-z0-9]{8}'
+    log:
+        'results/main/{cline}/logs/rule_download_paired_fastq_encode_{cline}_{lib}.log'
+    shell:
+        """
+            r1_lib=$(head -n 1 {input.lib_file} | cut -f 1)
+            r1_link="https://www.encodeproject.org/files/$r1_lib/@@download/$r1_lib.fastq.gz"
+
+            r2_lib=$(tail -n 1 {input.lib_file} | cut -f 1)
+            r2_link="https://www.encodeproject.org/files/$r2_lib/@@download/$r2_lib.fastq.gz"
+
+            wget -O {output.r1} $r1_link
+            wget -O {output.r2} $r2_link
         """
 
 include: "rules/hicpro.smk"
