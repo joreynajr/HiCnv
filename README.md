@@ -21,6 +21,8 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 - `{acc}` - short for accession and is a generalization for the srr and lib wildcards (not to be confused with Encode accessions, this definition is internal for HiCnv)
 - `{cline}` - cell line 
 
+UPDATE: HiCnv now supports downloading with ENCODE, instructions are given down below. 
+
 ## Authors
 
 mod: jreyna@lji.org (Joaquin Reyna BSc)
@@ -124,6 +126,22 @@ After installing all the necessary software, and setting up the configurations f
 snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
 Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
+
+## Run the HiCnv with ENCODE data
+After installing all the necessary software, and setting up the configurations files you can simply run (Rule run_hicnv):
+As always, add your new sample to the samplesheet. 
+<pre>
+vim config/sample_re.tsv
+</pre>
+
+Next, create a ENCODE library file following this file name/structure `results/main/{cline}/hicnv/reads/{cline}.{lib}.tsv`, the first line is the ENCDOE accession value for the read 1 fastq file and the second line is same for read 2. Optionally, add a second column with 1 and 2 as best practice and for easier data provenance/backtracking.
+
+Lastly, run the following snakemake command to run all Snakemake rules and ultimately call CNV's. 
+<pre>
+snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cline}.{lib}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
+</pre>
+Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
+
 
 ## Running on a cluster system
 The HiCnv workflow has been set up to work with PBS-Torque or on a local machine, the workflow will automatically submit each rule as a PBS-Torque job. To include your job management  system you must create a profile as specified [here](https://snakemake.readthedocs.io/en/stable/executing/cluster.html). To run with this workflow make sure to save your profile is under `workflow/profiles`. Ideally you would start from the main directory and do the following:
