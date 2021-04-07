@@ -128,12 +128,12 @@ snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/{cli
 Snakemake deduces what rules need to be run and will run as if you you followed the slower tutorial from above.
 
 ## Run HiCnv with ENCODE data
-As always, add your new sample to the samplesheet. 
+As always, add your new sample to the samplesheet
 <pre>
 vim config/sample_re.tsv
 </pre>
 
-Next, create a ENCODE library file following this file name/structure `results/main/{cline}/hicnv/reads/{cline}.{lib}.tsv`, the first line is the ENCDOE accession value for the read 1 fastq file and the second line is same for read 2. Optionally, add a second column with 1 and 2 as best practice and for easier data provenance/backtracking.
+Next, create a ENCODE library file using the following file name/structure: `results/main/{cline}/hicnv/reads/{cline}.{lib}.tsv` where `{cline}` is the name of the cell line or sample and `{lib}` is the ENCODE library ID. The first line should be the ENCODE accession value for the read 1 fastq file and the second line is same for read 2. Optionally, add a second column with 1 and 2 (corresponding to read 1 and 2) as best practice and for easier data provenance/backtracking.
 
 Lastly, run the following snakemake command to run all Snakemake rules and ultimately call CNV's. 
 <pre>
