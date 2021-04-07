@@ -21,7 +21,7 @@ The current version of this HiCnv uses [Snakemake](https://snakemake.readthedocs
 - `{acc}` - short for accession and is a generalization for the srr and lib wildcards (not to be confused with Encode accessions, this definition is internal for HiCnv)
 - `{cline}` - cell line 
 
-UPDATE: HiCnv now supports downloading with ENCODE, instructions are given down below in **Run HiCnv with ENCODE data**. 
+**UPDATE**: HiCnv now supports downloading with ENCODE, instructions are given down below in [**Run HiCnv with ENCODE data**](https://github.com/joreynajr/HiCnv/blob/master/README.md#run-hicnv-with-encode-data). 
 
 ## Authors
 
