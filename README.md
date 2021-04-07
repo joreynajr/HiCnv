@@ -116,12 +116,6 @@ Finally run the CNV analyis which uses scripts/hicnv_v2.R (Rule run_hicnv):
 snakemake --profile results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
 
-### Run the double minute analysis (in progress)
-You can also run the double minute analysis to find regions (Rule run_double_minutes):
-<pre>
-snakemake --profile workflow/profiles/pbs-torque results/main/{cline}/hicnv/...
-</pre>
-
 ## Run the HiCnv workflow the _fast way_
 After installing all the necessary software, and setting up the configurations files you can simply run (Rule run_hicnv):
 <pre>
