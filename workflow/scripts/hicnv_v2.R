@@ -288,7 +288,19 @@ Min_bic <- function(hmm_obj, nstates, chr_obj) {
   cat(paste("\t\t", d$bic, d$nstate, "\n"))
 
   d <- na.omit(as.data.frame(do.call(cbind,d)))
-  best_state = as.integer(d[which.min(d$bic),]$nstate)
+
+  #cat(paste0("This is d: ", d, "\n"))
+  #cat(paste0("This is d$bic: ", d$bic, "\n"))
+  #cat(paste0("This is which.min(d$bic): ", which.min(d$bic), "\n"))
+  #cat(paste0("This is d[which.min(d$bic),]: ", d[which.min(d$bic),], "\n"))
+  #cat(paste0("This is d[which.min(d$bic),]$nstate: ", d[which.min(d$bic),]$nstate, "\n"))
+
+  bic_vals = as.numeric(as.character(d$bic))
+  bic_vals[which(is.na(bic_vals))] = Inf
+
+  cat(paste0("This is bic_vals: ", bic_vals, "\n"))
+
+  best_state = as.integer(d[which.min(bic_vals),]$nstate)
   chr_obj[,"state"] <- hmm_obj[[best_state]][[1]]@posterior$state
   return(chr_obj)
 }
