@@ -324,14 +324,15 @@ rule hicpro_merge_persample_only: #  merging update complete
 # Build contact maps for the HiC data with HiCPro (single step)
 # mat = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000.matrix',
 # bed = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000_abs.bed'
+
 rule hicpro_build_contact_maps_only: #  merging update complete
     input:
-        vp_complete = rules.hicpro_hic_proc_only.output.vp_complete,
+        merged_samples = rules.hicpro_merge_persample_only.output.vp,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         mats = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/'),
-        mats_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/mats.complete')
+        mats_complete = touch('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/mats.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/data/',
         outdir = 'results/main/{cline}/hicpro/'
@@ -372,7 +373,7 @@ rule hicpro_ice_norm_only: #  merging update complete
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         iced = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/'),
-        iced_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/iced.complete')
+        iced_complete = touch('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/iced.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/matrix/',
         outdir = 'results/main/{cline}/hicpro/'
