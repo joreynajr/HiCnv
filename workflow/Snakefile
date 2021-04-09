@@ -1,6 +1,14 @@
 configfile: 'config/config.yaml'
 #report: "report/workflow.rst"
-#
+
+# loading packages used by helper rules
+# and global variables
+import glob
+from pandas import read_table
+
+# Loading the sampleheet for global use
+SAMPLESHEET = read_table('config/samplesheet.tsv', index_col=0)
+
 wildcard_constraints:
     srr = 'SRR[A-Za-z0-9]{7,8}',
     lib = 'ENC[A-Za-z0-9]{8}'
