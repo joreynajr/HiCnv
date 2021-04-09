@@ -64,9 +64,32 @@ def get_r1_r2_fastqs(wildcards):
 
 
 # Helper function to obtain all for a given cell line
-# Make sure to download the sra accession list from SRA
-def get_srrs(wildcards):
+# Make sure to download the accession list from SRA
+def get_bam1s_bam2s(wildcards):
 
+    # init lists to collect bam1 and bam2 files
+    bam1s = []
+    bam2s = []
+
+    # list the accession files for this sample
+    acc_lists = glob.glob('results/main/{cline}/reads/{cline}.*.SRR_Acc_List.txt'.format(cline=wildcards.cline))
+
+    # parse through the accession lists and get teh bam1 and bam2 paths
+    for acc_list in acc_lists:
+        with open(acc_list) as fr:
+            accs = [x.strip() for x in fr.readlines()]
+            for acc in accs:
+                bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{acc}_1_hg38.bwt2merged.bam'.format(cline=wildcards.cline, acc=acc)
+                bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{acc}_2_hg38.bwt2merged.bam'.format(cline=wildcards.cline, acc=acc)
+                bam1s.append(bam1)
+                bam2s.append(bam2)
+    d = {'bam1s': bam1s, 'bam2s': bam2s}
+    return(d)
+
+
+# Helper function to obtain all for a given cell line
+# # Make sure to download the sra accession list from SRA
+def get_srrs(wildcards):
     # list the sra accession files for this sample
     srr_files = glob.glob('results/main/{cline}/reads/{cline}.*.SRR_Acc_List.txt'.format(cline=wildcards.cline))
     srrs = []
@@ -76,14 +99,19 @@ def get_srrs(wildcards):
         with open(srr_file) as fr:
             curr = [x.strip() for x in fr.readlines()]
             srrs.extend(curr)
+    print(srrs)
     return(srrs)
 
-
 # Align the HiC data with merging capability
+# Was trying to explicitly list al the bam files created by
+# HiC-Pro but currently not possibly so I'll work with snakemake
+# as per usual. Just for reference I as trying the town lines below.
+# They will be remove after a commit for future reference.
+# bam1s = expand('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{acc}_1_hg38.bwt2merged.bam', acc=get_srrs, allow_missing=True),
+# bam2s = expand('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{acc}_2_hg38.bwt2merged.bam', acc=get_srrs, allow_missing=True)
 rule hicpro_align_only:
     input:
-        r1s = expand('results/main/{cline}/reads/{acc}_1.fastq.gz', acc=get_srrs, allow_missing=True),
-        r2s = expand('results/main/{cline}/reads/{acc}_2.fastq.gz', acc=get_srrs, allow_missing=True),
+        unpack(get_r1_r2_fastqs),
         gs = rules.download_hg38_files.output.genome_sizes,
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
@@ -101,7 +129,7 @@ rule hicpro_align_only:
         ppn = 4,
         mem_mb = 80000
     log:
-        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}.log'
     shell:
         """
             # setting up a temporary data directory structure for hicpro
@@ -184,53 +212,40 @@ rule hicpro_align_only:
 #        """
 
 
-# Helper function to obtain all for a given cell line
-# Make sure to download the accession list from SRA
-def get_bam1_bam2(wildcards):
 
-    # init lists to collect bam1 and bam2 files
-    bam1s = []
-    bam2s = []
-
-    # list the accession files for this sample
-    bam1s = glob.glob('results/main/{cline}/hicpro/bowtie_results/bwt2/*_1_hg38.bwt2merged.bam'.format(cline=wildcards.cline))
-    bam2s = glob.glob('results/main/{cline}/hicpro/bowtie_results/bwt2/*_2_hg38.bwt2merged.bam'.format(cline=wildcards.cline))
-    d = {'bam1s': bam1s, 'bam2s': bam2s}
-    return(d)
-
-## Process the HiC data with HiCPro (single step)
-rule hicpro_hic_proc_only:
-    input:
-        unpack(get_bam1_bam2),
-        config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-    output:
-        vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs'
-    params:
-        datadir = 'results/main/{cline}/hicpro/bowtie_results/bwt2/',
-        outdir = 'results/main/{cline}/hicpro/'
-    resources:
-        nodes = 1,
-        ppn = 4,
-        mem_mb = 10000
-    log:
-        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
-    shell:
-        """
-            # getting absoluate paths for data and outdirs, required
-            # by HiCPro
-            abs_datadir=$(readlink -f {params.datadir})
-            abs_outdir=$(readlink -f {params.outdir})
-
-            # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s proc_hic \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
-        """
-
-
+### Process the HiC data with HiCPro (single step)
+#rule hicpro_hic_proc_only:
+#    input:
+#        unpack(get_bam1_bam2),
+#        config = ancient(re_config_file),
+#        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
+#    output:
+#        vp = 'results/main/{cline}/hicpro/hic_results/data/{srr}/{srr}_hg38.bwt2pairs.validPairs'
+#    params:
+#        datadir = 'results/main/{cline}/hicpro/bowtie_results/bwt2/',
+#        outdir = 'results/main/{cline}/hicpro/'
+#    resources:
+#        nodes = 1,
+#        ppn = 4,
+#        mem_mb = 10000
+#    log:
+#        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
+#    shell:
+#        """
+#            # getting absoluate paths for data and outdirs, required
+#            # by HiCPro
+#            abs_datadir=$(readlink -f {params.datadir})
+#            abs_outdir=$(readlink -f {params.outdir})
+#
+#            # pipeline (default settings)
+#            singularity exec {input.hicpro_img} \
+#                    HiC-Pro -s proc_hic \
+#                            -i $abs_datadir \
+#                            -o $abs_outdir \
+#                            -c {input.config} >> {log} 2>&1
+#        """
+#
+#
 ## Quality check the HiC data with HiCPro (single step)
 #rule hicpro_quality_checks_only: # Restruct test partial complete
 #    input:
