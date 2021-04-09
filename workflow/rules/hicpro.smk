@@ -103,12 +103,6 @@ def get_srrs(wildcards):
     return(srrs)
 
 # Align the HiC data with merging capability
-# Was trying to explicitly list al the bam files created by
-# HiC-Pro but currently not possibly so I'll work with snakemake
-# as per usual. Just for reference I as trying the town lines below.
-# They will be remove after a commit for future reference.
-# bam1s = expand('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{acc}_1_hg38.bwt2merged.bam', acc=get_srrs, allow_missing=True),
-# bam2s = expand('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{acc}_2_hg38.bwt2merged.bam', acc=get_srrs, allow_missing=True)
 rule hicpro_align_only:
     input:
         unpack(get_r1_r2_fastqs),
