@@ -2,7 +2,7 @@ configfile: 'config/config.yaml'
 #report: "report/workflow.rst"
 #
 wildcard_constraints:
-    srr = 'SRR[A-Za-z0-9]{7,8}'
+    srr = 'SRR[A-Za-z0-9]{7,8}',
     lib = 'ENC[A-Za-z0-9]{8}'
 
 # Downloading hg38 files as needed
@@ -117,7 +117,4 @@ rule download_paired_fastq_encode:
         """
 
 include: "rules/hicpro.smk"
-include: "rules/hicpro_updates.smk"
 include: "rules/hicnv.smk"
-
-ruleorder: hicpro_align_only_all_accs > hicpro_align_only
