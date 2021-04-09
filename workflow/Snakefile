@@ -1,5 +1,9 @@
 configfile: 'config/config.yaml'
 #report: "report/workflow.rst"
+#
+wildcard_constraints:
+    srr = 'SRR[A-Za-z0-9]{7,8}'
+    lib = 'ENC[A-Za-z0-9]{8}'
 
 # Downloading hg38 files as needed
 rule download_hg38_files:
@@ -71,8 +75,6 @@ rule download_paired_fastq_sra:
         r1 = 'results/main/{cline}/reads/{srr}_1.fastq.gz',
         r2 = 'results/main/{cline}/reads/{srr}_2.fastq.gz',
         meta = 'results/main/{cline}/reads/{srr}.meta.csv'
-    wildcard_constraints:
-        srr = 'SRR[A-Za-z0-9]{7}'
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
     shadow: 'shallow'
@@ -80,7 +82,7 @@ rule download_paired_fastq_sra:
         outdir = 'results/main/{cline}/reads/',
         meta = '{srr}.meta.csv'
     resources:
-        mem_mb = 16000,
+        mem_mb = 32000,
         nodes = 1,
         ppn = 4
     shell:
@@ -100,8 +102,6 @@ rule download_paired_fastq_encode:
     output:
         r1 = 'results/main/{cline}/reads/{lib}_1.fastq.gz',
         r2 = 'results/main/{cline}/reads/{lib}_2.fastq.gz'
-    wildcard_constraints:
-        lib = 'ENC[A-Za-z0-9]{8}'
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_encode_{cline}_{lib}.log'
     shell:
@@ -117,4 +117,7 @@ rule download_paired_fastq_encode:
         """
 
 include: "rules/hicpro.smk"
+include: "rules/hicpro_updates.smk"
 include: "rules/hicnv.smk"
+
+ruleorder: hicpro_align_only_all_accs > hicpro_align_only
