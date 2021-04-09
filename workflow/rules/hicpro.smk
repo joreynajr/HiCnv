@@ -146,56 +146,6 @@ rule hicpro_align_only: # merging update complete
         """
 
 
-## Align the HiC data (deprecated, was no merging samples)
-#rule hicpro_align_only:
-#    input:
-#        r1 = rules.download_paired_fastq_sra.output.r1,
-#        r2 = rules.download_paired_fastq_sra.output.r2,
-#        gs = rules.download_hg38_files.output.genome_sizes,
-#        digestion = re_digestion_file,
-#        bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
-#        config = ancient(re_config_file),
-#        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-#    output:
-#        bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
-#        bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam'
-#    params:
-#        datadir1 = 'results/main/{cline}/hicpro/hicpro_tmp_{srr}/',
-#        datadir2 = 'results/main/{cline}/hicpro/hicpro_tmp_{srr}/{srr}/',
-#        outdir = 'results/main/{cline}/hicpro/'
-#    resources:
-#        nodes = 1,
-#        ppn = 4,
-#        mem_mb = 80000
-#    log:
-#        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
-#    shell:
-#        """
-#            # setting up a temporary data directory structure for hicpro
-#            mkdir -p {params.datadir2}
-#            abs_r1=$(readlink -f {input.r1})
-#            abs_r2=$(readlink -f {input.r2})
-#            ln -f -s $abs_r1 {params.datadir2}
-#            ln -f -s $abs_r2 {params.datadir2}
-#
-#            # getting absoluate paths for data and outdirs, required
-#            # by HiCPro
-#            abs_datadir=$(readlink -f {params.datadir1})
-#            abs_outdir=$(readlink -f {params.outdir})
-#
-#            # running without setting -s so that it runs the entire
-#            # pipeline (default settings)
-#            singularity exec {input.hicpro_img} \
-#                    HiC-Pro -s mapping \
-#                            -i $abs_datadir \
-#                            -o $abs_outdir \
-#                            -c {input.config} >> {log} 2>&1
-#
-#            # removing the temp data dir
-#            # rm -r {params.datadir1}
-#        """
-
-
 # Quality check the HiC data with HiCPro (single step)
 rule hicpro_quality_checks_only: #  merging update incomplete
     input:
