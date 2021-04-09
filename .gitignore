@@ -13,3 +13,5 @@ results/test/*
 !results/test/config_test_latest.txt
 !results/test/README.txt
 !results/test/sra/
+
+.new_samples/
