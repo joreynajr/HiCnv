@@ -63,28 +63,45 @@ def get_r1_r2_fastqs(wildcards):
     return(d)
 
 
+# Helper function to obtain all for a given cell line
+# Make sure to download the sra accession list from SRA
+def get_srrs(wildcards):
+
+    # list the sra accession files for this sample
+    srr_files = glob.glob('results/main/{cline}/reads/{cline}.*.SRR_Acc_List.txt'.format(cline=wildcards.cline))
+    srrs = []
+
+    # parse through the sra accession lists and get teh r1 and r2 paths
+    for srr_file in srr_files:
+        with open(srr_file) as fr:
+            curr = [x.strip() for x in fr.readlines()]
+            srrs.extend(curr)
+    return(srrs)
+
+
 # Align the HiC data with merging capability
 rule hicpro_align_only:
     input:
-        unpack(get_r1_r2_fastqs),
+        r1s = expand('results/main/{cline}/reads/{acc}_1.fastq.gz', acc=get_srrs, allow_missing=True),
+        r2s = expand('results/main/{cline}/reads/{acc}_2.fastq.gz', acc=get_srrs, allow_missing=True),
         gs = rules.download_hg38_files.output.genome_sizes,
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
-        bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam'
+        bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{srr}_1_hg38.bwt2merged.bam',
+        bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{srr}_2_hg38.bwt2merged.bam'
     params:
-        datadir1 = 'results/main/{cline}/hicpro/reads_tmp/',
-        datadir2 = 'results/main/{cline}/hicpro/reads_tmp/{srr}/',
+        datadir1 = 'results/main/{cline}/hicpro/reads_syms/',
+        datadir2 = 'results/main/{cline}/hicpro/reads_syms/{cline}/',
         outdir = 'results/main/{cline}/hicpro/'
     resources:
         nodes = 1,
         ppn = 4,
         mem_mb = 80000
     log:
-        'results/main/{cline}/logs/rule_hicpro_align_only_all_accs{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
     shell:
         """
             # setting up a temporary data directory structure for hicpro
@@ -114,9 +131,6 @@ rule hicpro_align_only:
                             -i $abs_datadir \
                             -o $abs_outdir \
                             -c {input.config} >> {log} 2>&1
-
-            # removing the temp data dir
-            rm -r {params.datadir1}
         """
 
 
@@ -170,11 +184,24 @@ rule hicpro_align_only:
 #        """
 
 
+# Helper function to obtain all for a given cell line
+# Make sure to download the accession list from SRA
+def get_bam1_bam2(wildcards):
+
+    # init lists to collect bam1 and bam2 files
+    bam1s = []
+    bam2s = []
+
+    # list the accession files for this sample
+    bam1s = glob.glob('results/main/{cline}/hicpro/bowtie_results/bwt2/*_1_hg38.bwt2merged.bam'.format(cline=wildcards.cline))
+    bam2s = glob.glob('results/main/{cline}/hicpro/bowtie_results/bwt2/*_2_hg38.bwt2merged.bam'.format(cline=wildcards.cline))
+    d = {'bam1s': bam1s, 'bam2s': bam2s}
+    return(d)
+
 ## Process the HiC data with HiCPro (single step)
 rule hicpro_hic_proc_only:
     input:
-        bam1 = rules.hicpro_align_only.output.bam1,
-        bam2 = rules.hicpro_align_only.output.bam2,
+        unpack(get_bam1_bam2),
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
