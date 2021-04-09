@@ -16,7 +16,7 @@ rule download_hicpro_singularity_img:
 
 # load sample to re dict
 def load_samplesheet():
-    ss = read_table('../../../HiCnv/config/samplesheet.tsv', index_col=0)
+    ss = read_table('config/samplesheet.tsv', index_col=0)
     return(ss)
 
 
