@@ -111,9 +111,9 @@ rule hicpro_align_only: # merging update complete
         ppn = 4,
         mem_mb = 80000
     log:
-        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_hicpro_align_only_{cline}.log'
     benchmark:
-        'results/main/{cline}/benchmarks/rule_hicpro_align_only_{cline}_{srr}.bmk'
+        'results/main/{cline}/benchmarks/rule_hicpro_align_only_{cline}.bmk'
     shell:
         """
             # setting up a temporary data directory structure for hicpro
@@ -236,7 +236,7 @@ rule hicpro_hic_proc_only: # merging update complete
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        vp = directory('results/main/{cline}/hicpro/hic_results/data/{cline}/')
+        vp = directory('results/main/{cline}/hicpro/hic_results/data/{cline}/'),
         vp_complete = touch('results/main/{cline}/hicpro/hic_results/data/{cline}/process.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/bowtie_results/bwt2/',
@@ -246,9 +246,9 @@ rule hicpro_hic_proc_only: # merging update complete
         ppn = 4,
         mem_mb = 10000
     log:
-        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}.log'
     benchmark:
-        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_{cline}_{srr}.bmk'
+        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_{cline}.bmk'
     shell:
         """
             # getting absoluate paths for data and outdirs, required
@@ -330,7 +330,7 @@ rule hicpro_build_contact_maps_only: #  merging update complete
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        mats = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/')
+        mats = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/'),
         mats_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/mats.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/data/',
@@ -371,7 +371,7 @@ rule hicpro_ice_norm_only: #  merging update complete
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        iced = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/')
+        iced = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/'),
         iced_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/iced.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/matrix/',
