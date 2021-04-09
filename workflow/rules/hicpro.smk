@@ -1,4 +1,5 @@
 import glob
+from pandas import read_table
 
 # HiCPro documentation https://github.com/nservant/HiC-Pro
 # Download the HiCPro singularity img file which as linked
@@ -14,27 +15,23 @@ rule download_hicpro_singularity_img:
 
 
 # load sample to re dict
-def load_dict():
-    with open('config/sample_re.tsv') as fr:
-        d = dict()
-        for line in fr:
-            cline, re = line.strip().split()
-            d[cline] = re
-        return(d)
+def load_samplesheet():
+    ss = read_table('../../../HiCnv/config/samplesheet.tsv', index_col=0)
+    return(ss)
 
 
 # get the restriction enzyme digestion files
 def re_digestion_file(wildcards):
-    sample_re = load_dict()
-    re = sample_re[wildcards.cline]
+    ss = load_samplesheet()
+    re = ss.loc[wildcards.cline, 're']
     config = 'results/refs/restriction_enzymes/hg38_{}_digestion.bed'.format(re)
     return(config)
 
 
 # get the restriction enzyme hicpro config
 def re_config_file(wildcards):
-    sample_re = load_dict()
-    re = sample_re[wildcards.cline]
+    ss = load_samplesheet()
+    re = ss.loc[wildcards.cline, 're']
     config = 'results/refs/hicpro/config-hicpro.{}.txt'.format(re)
     return(config)
 

@@ -1,0 +1,15 @@
+cline	re	source
+T47D	hindiii	encode
+test_copy	hindiii	sra
+test_short	hindiii	sra
+tixon	hindiii	sra
+A549	hindiii&nhel??	sra
+HepG2	hindiii&nhel??	sra
+22Rv1	mboi	sra
+HeLa_Kyoto_MboI_G1_Snyc_STAG1_Depleted	mboi	sra
+HeLa_Kyoto_MboI_G1_Snyc_STAG2_Depleted	mboi	sra
+HeLa_MboI_G1_Snyc	mboi	sra
+HL60S4_14_Pore	mboi	sra
+HL60S4_5_Pore	mboi	sra
+HL60S4	mboi	sra
+Nalm6	mboi	sra
