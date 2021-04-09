@@ -100,8 +100,8 @@ rule hicpro_align_only: # merging update complete
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        bam1 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{srr}_1_hg38.bwt2merged.bam',
-        bam2 = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{srr}_2_hg38.bwt2merged.bam'
+        bowtie_results = directory('results/main/{cline}/hicpro/bowtie_results/{cline}'),
+        bowtie_complete = touch('results/main/{cline}/hicpro/bowtie_results/{cline}/bowtie.complete')
     params:
         datadir1 = 'results/main/{cline}/hicpro/reads_syms/',
         datadir2 = 'results/main/{cline}/hicpro/reads_syms/{cline}/',
@@ -196,46 +196,10 @@ rule hicpro_align_only: # merging update complete
 #        """
 
 
-
-## Process the HiC data with HiCPro (single step)
-rule hicpro_hic_proc_only: # merging update complete
-    input:
-        bams = rules.hicpro_align_only.output,
-        config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-    output:
-        vp = 'results/main/{cline}/hicpro/hic_results/data/{cline}/{srr}_hg38.bwt2pairs.validPairs'
-    params:
-        datadir = 'results/main/{cline}/hicpro/bowtie_results/bwt2/',
-        outdir = 'results/main/{cline}/hicpro/'
-    resources:
-        nodes = 1,
-        ppn = 4,
-        mem_mb = 10000
-    log:
-        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
-    benchmark:
-        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_{cline}_{srr}.bmk'
-    shell:
-        """
-            # getting absoluate paths for data and outdirs, required
-            # by HiCPro
-            abs_datadir=$(readlink -f {params.datadir})
-            abs_outdir=$(readlink -f {params.outdir})
-
-            # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s proc_hic \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
-        """
-
-
 # Quality check the HiC data with HiCPro (single step)
 rule hicpro_quality_checks_only: #  merging update incomplete
     input:
-        bams = rules.hicpro_align_only.output,
+        bams = rules.hicpro_align_only.output.bowtie_complete,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
@@ -265,6 +229,42 @@ rule hicpro_quality_checks_only: #  merging update incomplete
         """
 
 
+## Process the HiC data with HiCPro (single step)
+rule hicpro_hic_proc_only: # merging update complete
+    input:
+        bams = rules.hicpro_align_only.output.bowtie_complete,
+        config = ancient(re_config_file),
+        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
+    output:
+        vp = directory('results/main/{cline}/hicpro/hic_results/data/{cline}/')
+        vp_complete = touch('results/main/{cline}/hicpro/hic_results/data/{cline}/process.complete')
+    params:
+        datadir = 'results/main/{cline}/hicpro/bowtie_results/bwt2/',
+        outdir = 'results/main/{cline}/hicpro/'
+    resources:
+        nodes = 1,
+        ppn = 4,
+        mem_mb = 10000
+    log:
+        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_{cline}_{srr}.bmk'
+    shell:
+        """
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir})
+            abs_outdir=$(readlink -f {params.outdir})
+
+            # pipeline (default settings)
+            singularity exec {input.hicpro_img} \
+                    HiC-Pro -s proc_hic \
+                            -i $abs_datadir \
+                            -o $abs_outdir \
+                            -c {input.config} >> {log} 2>&1
+        """
+
+
 # Helper function to obtain all for a given cell line
 # Make sure to download the accession list from SRA
 def get_vps(wildcards):
@@ -288,7 +288,7 @@ def get_vps(wildcards):
 # Build contact maps for the HiC data with HiCPro (single step)
 rule hicpro_merge_persample_only: #  merging update complete
     input:
-        vp = get_vps,
+        vp_complete = rules.hicpro_hic_proc_only.output.vp_complete,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
@@ -322,14 +322,16 @@ rule hicpro_merge_persample_only: #  merging update complete
 
 
 # Build contact maps for the HiC data with HiCPro (single step)
+# mat = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000.matrix',
+# bed = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000_abs.bed'
 rule hicpro_build_contact_maps_only: #  merging update complete
     input:
-        vp = 'results/main/{cline}/hicpro/hic_results/data/{cline}/{cline}.allValidPairs',
+        vp_complete = rules.hicpro_hic_proc_only.output.vp_complete,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        mat = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000.matrix',
-        bed = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000_abs.bed'
+        mats = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/')
+        mats_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/mats.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/data/',
         outdir = 'results/main/{cline}/hicpro/'
@@ -357,16 +359,20 @@ rule hicpro_build_contact_maps_only: #  merging update complete
         """
 
 
+
 # Build contact maps for the HiC data with HiCPro (single step)
+#mat = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000.matrix',
+#bed = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000_abs.bed',
+# matrix = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/10000/{cline}_10000_iced.matrix',
+# biases = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/10000/{cline}_10000_iced.matrix.biases'
 rule hicpro_ice_norm_only: #  merging update complete
     input:
-        mat = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000.matrix',
-        bed = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/10000/{cline}_10000_abs.bed',
+        mats_complete = rules.hicpro_build_contact_maps_only.output.mats_complete,
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        matrix = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/10000/{cline}_10000_iced.matrix',
-        biases = 'results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/10000/{cline}_10000_iced.matrix.biases'
+        iced = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/')
+        iced_complete = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/iced.complete')
     params:
         datadir = 'results/main/{cline}/hicpro/hic_results/matrix/',
         outdir = 'results/main/{cline}/hicpro/'
