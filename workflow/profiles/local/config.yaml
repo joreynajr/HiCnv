@@ -1,4 +1,4 @@
-cores: 1
+cores: 25
 latency-wait: 120
 printshellcmds: true
 reason: true
@@ -6,5 +6,5 @@ keep-going: true
 nolock: true
 report-stylesheet: "custom-stylesheet.css"
 show-failed-logs: true
-summary: true
-detailed-summary: true
+summary: false
+detailed-summary: false
