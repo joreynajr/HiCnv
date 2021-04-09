@@ -184,6 +184,8 @@ rule run_hicnv:
         'results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
     log:
         'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{srr}.bmk'
     resources:
         ppn = 4
     #shadow: 'minimal'

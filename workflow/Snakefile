@@ -43,6 +43,8 @@ rule bowtie2_index_ref_genome:
         base_out = 'results/refs/hg38/hg38'
     log:
         'results/refs/hg38/logs/rule_bowtie2_index_ref_genome.log'
+    benchmark:
+        'results/refs/hg38/benchmarks/rule_bowtie2_index_ref_genome.bmk'
     shell:
         """
             bowtie2-build {input} {params.base_out} >> {log} 2>&1
@@ -77,6 +79,8 @@ rule download_paired_fastq_sra:
         meta = 'results/main/{cline}/reads/{srr}.meta.csv'
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_download_paired_fastq_sra_{cline}_{srr}.bmk'
     shadow: 'shallow'
     params:
         outdir = 'results/main/{cline}/reads/',

@@ -125,6 +125,8 @@ rule hicpro_align_only: # merging update complete
         mem_mb = 80000
     log:
         'results/main/{cline}/logs/rule_hicpro_align_only_{cline}_{srr}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_align_only_{cline}_{srr}.bmk'
     shell:
         """
             # setting up a temporary data directory structure for hicpro
@@ -225,6 +227,8 @@ rule hicpro_hic_proc_only: # merging update complete
         mem_mb = 10000
     log:
         'results/main/{cline}/logs/rule_hicpro_hic_proc_only_{cline}_{srr}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_{cline}_{srr}.bmk'
     shell:
         """
             # getting absoluate paths for data and outdirs, required
@@ -312,6 +316,8 @@ rule hicpro_merge_persample_only: #  merging update complete
         mem_mb = 64000
     log:
         'results/main/{cline}/logs/rule_hicpro_merge_persample_only_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_merge_persample_only_{cline}.bmk'
     shell:
         """
             # getting absoluate paths for data and outdirs, required
@@ -345,7 +351,9 @@ rule hicpro_build_contact_maps_only: #  merging update complete
         ppn = 4,
         mem_mb = 64000
     log:
-        'results/main/{cline}/logs/rule_hicpro_build_contact_maps_only_{cline}_{cline}.log'
+        'results/main/{cline}/logs/rule_hicpro_build_contact_maps_only_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_build_contact_maps_only_{cline}.bmk'
     shell:
         """
             # getting absoluate paths for data and outdirs, required
@@ -381,6 +389,8 @@ rule hicpro_ice_norm_only: #  merging update complete
         mem_mb = 64000
     log:
         'results/main/{cline}/logs/rule_hicpro_ice_norm_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_ice_norm_{cline}.bmk'
     shell:
         """
             # getting absoluate paths for data and outdirs, required
