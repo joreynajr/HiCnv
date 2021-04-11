@@ -100,7 +100,7 @@ rule hicpro_align_only: # merging update complete
         config = ancient(re_config_file),
         hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
-        bowtie_results = directory('results/main/{cline}/hicpro/bowtie_results/{cline}'),
+        bowtie_results = directory('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/'),
         bowtie_complete = touch('results/main/{cline}/hicpro/bowtie_results/{cline}/bowtie.complete')
     params:
         datadir1 = 'results/main/{cline}/hicpro/reads_syms/',
