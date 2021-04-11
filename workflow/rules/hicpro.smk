@@ -37,7 +37,7 @@ def get_r1_r2_fastqs(wildcards):
     # list the accession files for this sample
     acc_lists = glob.glob('results/main/{cline}/reads/{cline}.*.SRR_Acc_List.txt'.format(cline=wildcards.cline))
 
-    # parse through the accession lists and get teh r1 and r2 paths 
+    # parse through the accession lists and get teh r1 and r2 paths
     for acc_list in acc_lists:
         with open(acc_list) as fr:
             accs = [x.strip() for x in fr.readlines()]
@@ -349,3 +349,53 @@ rule hicpro_ice_norm_only: #  merging update complete
                             -o $abs_outdir \
                             -c {input.config} >> {log} 2>&1
         """
+
+
+## Run fastq_pair to ensure file is processed correctly
+# Current template example can be found at:
+# /mnt/BioHome/jreyna/archive/test_hicpro/test_data/dixon_2M/fastq_pair.sh
+#rule fastq_pair:
+#    input:
+#        unpack(get_r1_r2_fastqs),
+#    output:
+#        r1 = 'results/main/{cline}/reads/{acc}_1.paired.fastq.gz'.format(cline=wildcards.cline, acc=acc)
+#        r2 = 'results/main/{cline}/reads/{acc}_2.paired.fastq.gz'.format(cline=wildcards.cline, acc=acc)
+#    resources:
+#        nodes = 1,
+#        ppn = 4,
+#        mem_mb = 64000
+#    log:
+#        'results/main/{cline}/logs/rule_fastq_pair_{cline}_{acc}.log'
+#    benchmark:
+#        'results/main/{cline}/benchmarks/rule_fastq_pair_{cline}_{acc}.bmk'
+#    shell:
+#        """
+#            # Uncompress fastq's
+#            echo "# Uncompress fastq's"
+#            unpigz -p 1 -k ./SRR400264_00_R1.fastq.gz
+#            unpigz -p 1 -k ./SRR400264_00_R2.fastq.gz
+#
+#            # run the slow way
+#            echo "# run the slow way"
+#            fastq_pair SRR400264_00_R1.fastq SRR400264_00_R2.fastq
+#
+#            # run the faster way
+#            #fastq_pair -t <table size> <fq1> <fq2>
+#
+#            echo "# zip the fastq_pair results"
+#            pigz -p 1 -c SRR400264_00_R1.fastq.single.fq > SRR400264_00_R1.fastq.single.fastq.gz
+#            pigz -p 1 -c SRR400264_00_R2.fastq.single.fq > SRR400264_00_R2.fastq.single.fastq.gz
+#            pigz -p 1 -c SRR400264_00_R1.fastq.paired.fq > SRR400264_00_R1.fastq.paired.fastq.gz
+#            pigz -p 1 -c SRR400264_00_R2.fastq.paired.fq > SRR400264_00_R2.fastq.paired.fastq.gz
+#
+#            # remove the decompressed fastq's
+#            echo "# remove the decompressed fastqs"
+#            rm SRR400264_00_R1.fastq \
+#                SRR400264_00_R2.fastq \
+#                SRR400264_00_R1.fastq.single.fq \
+#                SRR400264_00_R2.fastq.single.fq \
+#                SRR400264_00_R1.fastq.paired.fq \
+#                SRR400264_00_R2.fastq.paired.fq
+#        """
+
+
