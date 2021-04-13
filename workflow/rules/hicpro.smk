@@ -90,10 +90,44 @@ def get_srrs(wildcards):
     return(srrs)
 
 
+# Renaming because _1 and _2 in file names can caused a problem
+# which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
+rule rename_before_hicpro:
+    input:
+        unpack(get_r1_r2_fastqs)
+    output:
+        new_dir = directory('results/main/{cline}/hicpro/renamed_fastqs/{cline}/'),
+        rename_complete = touch('results/main/{cline}/hicpro/renamed_fastqs/renamed.complete')
+    log:
+        'results/main/{cline}/logs/rule_rename_before_hicpro_{cline}.log'
+    shell:
+        """
+            mkdir -p {output.new_dir}
+
+            # renaming R1's
+            for fn in {input.r1s};
+            do
+                new_fn=$(basename $fn | sed "s/_1\.fastq\.gz/_R1.fastq.gz/")
+                new_fn="{output.new_dir}/$new_fn"
+                full_orig=$(readlink -f $fn)
+                ln -s $full_orig $new_fn
+            done
+
+            # renaming R2's
+            for fn in {input.r2s};
+            do
+                new_fn=$(basename $fn | sed "s/_2\.fastq\.gz/_R2.fastq.gz/")
+                new_fn="{output.new_dir}/$new_fn"
+                full_orig=$(readlink -f $fn)
+                ln -s $full_orig $new_fn
+            done
+        """
+
+
 # Align the HiC data with merging capability
 rule hicpro_align_only: # merging update complete
     input:
-        unpack(get_r1_r2_fastqs),
+        fastq_dir = rules.rename_before_hicpro.output.new_dir,
         gs = rules.download_hg38_files.output.genome_sizes,
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
@@ -103,8 +137,7 @@ rule hicpro_align_only: # merging update complete
         bowtie_results = directory('results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/'),
         bowtie_complete = touch('results/main/{cline}/hicpro/bowtie_results/{cline}/bowtie.complete')
     params:
-        datadir1 = 'results/main/{cline}/hicpro/reads_syms/',
-        datadir2 = 'results/main/{cline}/hicpro/reads_syms/{cline}/',
+        datadir = 'results/main/{cline}/hicpro/renamed_fastqs/', # part of rule rename_before_hicpr
         outdir = 'results/main/{cline}/hicpro/'
     resources:
         nodes = 1,
@@ -116,27 +149,12 @@ rule hicpro_align_only: # merging update complete
         'results/main/{cline}/benchmarks/rule_hicpro_align_only_{cline}.bmk'
     shell:
         """
-            # setting up a temporary data directory structure for hicpro
-            mkdir -p {params.datadir2}
-
-            for fn in {input.r1s};
-            do
-                abs_r1=$(readlink -f $fn)
-                ln -f -s $abs_r1 {params.datadir2}
-            done
-
-            for fn in {input.r2s};
-            do
-                abs_r2=$(readlink -f $fn)
-                ln -f -s $abs_r2 {params.datadir2}
-            done
-
             # getting absoluate paths for data and outdirs, required
             # by HiCPro
-            abs_datadir=$(readlink -f {params.datadir1})
+            abs_datadir=$(readlink -f {params.datadir})
             abs_outdir=$(readlink -f {params.outdir})
 
-            # running without setting -s so that it runs the entire
+            # running with setting -s so that it runs only the alignment 
             # pipeline (default settings)
             singularity exec {input.hicpro_img} \
                     HiC-Pro -s mapping \
