@@ -1,6 +1,7 @@
 cores: 25
 latency-wait: 120
 printshellcmds: true
+cluster: "qsub.py"
 reason: true
 keep-going: true
 nolock: true
