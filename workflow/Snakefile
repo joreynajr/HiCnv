@@ -13,6 +13,8 @@ wildcard_constraints:
     srr = 'SRR[A-Za-z0-9]{7,8}',
     lib = 'ENC[A-Za-z0-9]{8}'
 
+localrules: rename_before_hicpro
+
 # Downloading hg38 files as needed
 rule download_hg38_files:
     params:
@@ -82,16 +84,16 @@ rule digest_reference_genome:
 # https://github.com/louiejtaylor/hisss/blob/master/rules/sra_paired.rules
 rule download_paired_fastq_sra:
     output:
-        r1 = 'results/main/{cline}/reads/{srr}_1.fastq.gz',
-        r2 = 'results/main/{cline}/reads/{srr}_2.fastq.gz',
-        meta = 'results/main/{cline}/reads/{srr}.meta.csv'
+        r1 = 'results/main/{cline}/reads/{cline}/{srr}_1.fastq.gz',
+        r2 = 'results/main/{cline}/reads/{cline}/{srr}_2.fastq.gz',
+        meta = 'results/main/{cline}/reads/{cline}/{srr}.meta.csv'
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_sra_{cline}_{srr}.log'
     benchmark:
         'results/main/{cline}/benchmarks/rule_download_paired_fastq_sra_{cline}_{srr}.bmk'
     shadow: 'shallow'
     params:
-        outdir = 'results/main/{cline}/reads/',
+        outdir = 'results/main/{cline}/reads/{cline}/',
         meta = '{srr}.meta.csv'
     resources:
         mem_mb = 32000,
