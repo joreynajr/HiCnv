@@ -14,4 +14,11 @@ results/test/*
 !results/test/README.txt
 !results/test/sra/
 
+results/main
+
+results/refs/*
+!results/refs
+results/refs/*
+!results/refs/hicpro/
+
 .new_samples/
