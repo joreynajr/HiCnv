@@ -21,7 +21,6 @@ rule download_hg38_mappability: # Restruct test done
 
 # Process the feature file as specified in HiCnv
 rule process_refeature: # Restruct test done
-    params:
     input:
         ref = 'results/refs/hg38/hg38.fa',
         dig = 'results/refs/restriction_enzymes/hg38_{re}_digestion.bed',
@@ -77,6 +76,17 @@ rule filter_refeature_for_main_chrs:
         """
 
 
+
+
+
+
+
+
+
+
+
+
+
 # get the restriction enzyme digestion files
 def re_fgc_map_file(wildcards):
     re = SAMPLESHEET.loc[wildcards.cline, 're']
@@ -88,24 +98,22 @@ def re_fgc_map_file(wildcards):
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule make_perREfragStats:
     input:
-        fwd_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_1_hg38.bwt2merged.bam',
-        rev_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{srr}/{srr}_2_hg38.bwt2merged.bam',
+        fwd_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{cline}_1_hg38.bwt2merged.bam',
+        rev_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{cline}_2_hg38.bwt2merged.bam',
         frag = re_digestion_file,
         fgc_map = re_fgc_map_file
     output:
-        frag_stats = 'results/main/{cline}/hicnv/{srr}.perREfragStats'
-    wildcard_constraints:
-        srr = '[A-Z0-9]+'
+        frag_stats = 'results/main/{cline}/hicnv/{cline}.perREfragStats'
     params:
-        merged_singletons = 'results/main/{cline}/hicnv/{srr}.bwt2pairs.withSingles.mapq30.bam',
-        outdir = 'results/main/{cline}/hicnv/{srr}_allMap2FragmentsOutput',
-        prefix = '{srr}_allMap2FragmentsOutput'
+        merged_singletons = 'results/main/{cline}/hicnv/{cline}.bwt2pairs.withSingles.mapq30.bam',
+        outdir = 'results/main/{cline}/hicnv/{cline}_allMap2FragmentsOutput',
+        prefix = '{cline}_allMap2FragmentsOutput'
     resources:
         nodes = 1,
         ppn = 2,
         mem_mb = 50000
     log:
-        'results/main/{cline}/logs/rule_make_perREfragStats_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_make_perREfragStats_{cline}.log'
     shell:
         """
               # Merge singletons
@@ -133,7 +141,7 @@ rule make_perREfragStats:
                             -o {params.outdir} >> {log} 2>&1
 
               # Sort the REfragStats
-              cat {params.outdir}/{wildcards.srr}.bwt2pairs.withSingles.mapq30.perREfragStats \
+              cat {params.outdir}/{wildcards.cline}.bwt2pairs.withSingles.mapq30.perREfragStats \
                             | sort -k1,1 -k2,2n > {output} 2> {log}
           """
 
@@ -148,11 +156,9 @@ rule filter_perREfragStats_for_main_chrs:
         frag_stats = rules.make_perREfragStats.output.frag_stats,
         chr_list = 'resources/chromosome_lists/main_chrs.txt'
     output:
-        frag_stats = 'results/main/{cline}/hicnv/{srr}.chrflt.perREfragStats'
-    wildcard_constraints:
-        srr = '[A-Z0-9]+'
+        frag_stats = 'results/main/{cline}/hicnv/{cline}.chrflt.perREfragStats'
     log:
-        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}.log'
     shell:
         """
             python workflow/scripts/filter_chrs_from_bed.py \
@@ -179,11 +185,11 @@ rule run_hicnv:
     params:
         outdir = directory('results/main/{cline}/hicnv/')
     output:
-        'results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
+        'results/main/{cline}/hicnv/{cline}.{cline}_hicnv/CNV_Estimation/{cline}.{cline}.cnv.bedGraph'
     log:
-        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{cline}.log'
     benchmark:
-        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{srr}.bmk'
+        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{cline}.bmk'
     resources:
         ppn = 4
     #shadow: 'minimal'
@@ -192,11 +198,11 @@ rule run_hicnv:
             {config[R4]} workflow/scripts/hicnv_v2.R \
                 --refeature={input.feat} \
                 --coverage={input.cov} \
-                --prefix={wildcards.cline}.{wildcards.srr} \
+                --prefix={wildcards.cline} \
                 --fragcutoff=150 \
                 --refchrom=chr1 \
                 --cpu {resources.ppn} >> {log} 2>&1
 
             mkdir -p {params.outdir} >> {log} 2>&1
-            mv {wildcards.cline}.{wildcards.srr}_hicnv/ {params.outdir} >> {log} 2>&1
+            mv {wildcards.cline}_hicnv/ {params.outdir} >> {log} 2>&1
         """
