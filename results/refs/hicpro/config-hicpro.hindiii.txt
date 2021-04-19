@@ -13,14 +13,14 @@ RAW_DIR = rawdata
 #######################################################################
 ## SYSTEM AND SCHEDULER - Start Editing Here !!
 #######################################################################
-N_CPU = 4
+N_CPU = 8
 SORT_RAM = 10000M
 LOGFILE = logs/hicpro.log
 
 JOB_NAME = 
 JOB_MEM = 64000M
 JOB_WALLTIME = 200:00:00
-JOB_QUEUE = 
+JOB_QUEUE = default
 JOB_MAIL = jreyna@lji.org
 
 #########################################################################
