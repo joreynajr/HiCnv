@@ -366,14 +366,13 @@ rule hicpro_ice_norm_only: #  merging update complete
 
 
 # Align the HiC data with merging capability
-rule hicpro_align_only_with_parallel: # localrule
+rule hicpro_align_only_with_parallel: # localrule # testing complete
     input:
         fastq_dir = rules.rename_before_hicpro.output.new_dir,
         gs = rules.download_hg38_files.output.genome_sizes,
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         bowtie_running = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bowtie.running'
     params:
@@ -399,120 +398,124 @@ rule hicpro_align_only_with_parallel: # localrule
                     -o $abs_outdir \
                     -c {input.config} >> {log} 2>&1
 
-            # making the bowtie running flag file
-            echo "# making the bowtie running flag file" >> {log} 2>&1
-            mkdir -p $(dirname {output.bowtie_running})
-            touch {output.bowtie_running}
+            # run the qsub
+            echo "# run the qsub" >> {log} 2>&1
+            cd {params.outdir}
+            mv HiCPro_step1_.sh HiCPro_align.sh
+            qsub HiCPro_align.sh >> {log} 2>&1
+        """
+
+
+# Quality check the HiC data with HiCPro (single step)
+rule hicpro_quality_checks_only_with_parallel: # in progress
+    input:
+        bams = rules.hicpro_align_only_with_parallel.output.bowtie_running,
+        config = ancient(re_config_file),
+    output:
+        qc_running = touch('results/main/{cline}/hicpro_with_parallel/hic_results/pic/qc.running')
+    params:
+        datadir = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/',
+        outdir = 'results/main/{cline}/hicpro_with_parallel/'
+    log:
+        'results/main/{cline}/logs/rule_hicpro_quality_checks_only_with_parallel_{cline}.log'
+    shell:
+        """
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir})
+            abs_outdir=$(readlink -f {params.outdir})
+
+            # pipeline (default settings)
+            /home/jreyna/software/HiC-Pro-Full/HiC-Pro-3.0.0/bin/HiC-Pro \
+                            -s quality_checks \
+                            -p \
+                            -i $abs_datadir \
+                            -o $abs_outdir \
+                            -c {input.config} >> {log} 2>&1
 
             # run the qsubs
             echo "# run the qsubs" >> {log} 2>&1
             cd {params.outdir}
-            qsub HiCPro_step1_.sh >> {log} 2>&1
+            qsub HiCPro_step2_.sh >> {log} 2>&1
         """
 
 
-## Quality check the HiC data with HiCPro (single step)
-#rule hicpro_quality_checks_only_with_parallel: # in progress
-#    input:
-#        bams = rules.hicpro_align_only_with_parallel.output.bowtie_complete,
-#        config = ancient(re_config_file),
-#        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-#    output:
-#        qc = directory('results/main/{cline}/hicpro_with_parallel/hic_results/pic/{cline}')
-#    params:
-#        datadir = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/',
-#        outdir = 'results/main/{cline}/hicpro_with_parallel/'
-#    resources:
-#        nodes = 1,
-#        ppn = 4,
-#        mem_mb = 10000
-#    log:
-#        'results/main/{cline}/logs/rule_hicpro_quality_checks_only_with_parallel_{cline}.log'
-#    shell:
-#        """
-#            # getting absoluate paths for data and outdirs, required
-#            # by HiCPro
-#            abs_datadir=$(readlink -f {params.datadir})
-#            abs_outdir=$(readlink -f {params.outdir})
-#
-#            # pipeline (default settings)
-#            singularity exec {input.hicpro_img} \
-#                    HiC-Pro -s quality_checks \
-#                            -i $abs_datadir \
-#                            -o $abs_outdir \
-#                            -c {input.config} >> {log} 2>&1
-#        """
+## Process the HiC data with HiCPro (single step)
+rule hicpro_hic_proc_only_with_parallel: # testing complete
+    input:
+        bams = rules.hicpro_align_only_with_parallel.output.bowtie_running,
+        config = ancient(re_config_file),
+    output:
+        vp_complete = touch('results/main/{cline}/hicpro_with_parallel/hic_results/data/{cline}/process.running')
+    params:
+        datadir = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/',
+        outdir = 'results/main/{cline}/hicpro_with_parallel/'
+    log:
+        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_with_parallel_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_with_parallel_{cline}.bmk'
+    shell:
+        """
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir})
+            abs_outdir=$(readlink -f {params.outdir})
+
+            # pipeline (default settings)
+            /home/jreyna/software/HiC-Pro-Full/HiC-Pro-3.0.0/bin/HiC-Pro \
+                -s proc_hic \
+                -p \
+                -i $abs_datadir \
+                -o $abs_outdir \
+                -c {input.config} >> {log} 2>&1
+
+            ## run the qsubs
+            echo "# run the qsubs" >> {log} 2>&1
+            cd {params.outdir}
+            mv HiCPro_step1_.sh HiCPro_proc_hic.sh
+            qsub HiCPro_proc_hic.sh >> {log} 2>&1
+        """
 
 
-### Process the HiC data with HiCPro (single step)
-#rule hicpro_hic_proc_only_with_parallel: # in progress
-#    input:
-#        bams = rules.hicpro_align_only.output.bowtie_complete,
-#        config = ancient(re_config_file),
-#        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-#    output:
-#        vp_complete = touch('results/main/{cline}/hicpro_with_parallel/hic_results/data/{cline}/process.complete')
-#    params:
-#        datadir = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/',
-#        outdir = 'results/main/{cline}/hicpro_with_parallel/'
-#    resources:
-#        nodes = 1,
-#        ppn = 4,
-#        mem_mb = 10000
-#    log:
-#        'results/main/{cline}/logs/rule_hicpro_hic_proc_only_with_parallel_{cline}.log'
-#    benchmark:
-#        'results/main/{cline}/benchmarks/rule_hicpro_hic_proc_only_with_parallel_{cline}.bmk'
-#    shell:
-#        """
-#            # getting absoluate paths for data and outdirs, required
-#            # by HiCPro
-#            abs_datadir=$(readlink -f {params.datadir})
-#            abs_outdir=$(readlink -f {params.outdir})
-#
-#            # pipeline (default settings)
-#            HiC-Pro -s proc_hic \
-#                -p \
-#                -i $abs_datadir \
-#                -o $abs_outdir \
-#                -c {input.config} >> {log} 2>&1
-#        """
+# Build contact maps for the HiC data with HiCPro (single step)
+rule hicpro_merge_persample_only_with_parallel: #  merging update complete
+    input:
+        vp_complete = rules.hicpro_hic_proc_only_with_parallel.output.vp_complete,
+        config = ancient(re_config_file),
+    output:
+        merge_complete = touch('results/main/{cline}/hicpro_with_parallel/hic_results/data/{cline}/merge.running')
+    params:
+        datadir = 'results/main/{cline}/hicpro_with_parallel/hic_results/data/',
+        outdir = 'results/main/{cline}/hicpro_with_parallel/'
+    resources:
+        nodes = 1,
+        ppn = 4,
+        mem_mb = 64000
+    log:
+        'results/main/{cline}/logs/rule_hicpro_merge_persample_only_with_parallel_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_merge_persample_only_with_parallel_{cline}.bmk'
+    shell:
+        """
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir})
+            abs_outdir=$(readlink -f {params.outdir})
 
+            # pipeline (default settings)
+            /home/jreyna/software/HiC-Pro-Full/HiC-Pro-3.0.0/bin/HiC-Pro \
+                -s merge_persample \
+                -p \
+                -i $abs_datadir \
+                -o $abs_outdir \
+                -c {input.config} >> {log} 2>&1
 
-## Build contact maps for the HiC data with HiCPro (single step)
-#rule hicpro_merge_persample_only_with_parallel: #  merging update complete
-#    input:
-#        vp_complete = rules.hicpro_hic_proc_only.output.vp_complete,
-#        config = ancient(re_config_file),
-#        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
-#    output:
-#        vp = 'results/main/{cline}/hicpro_with_parallel/hic_results/data/{cline}/{cline}.allValidPairs',
-#        stats = 'results/main/{cline}/hicpro_with_parallel/hic_results/stats/{cline}/{cline}_allValidPairs.mergestat'
-#    params:
-#        datadir = 'results/main/{cline}/hicpro_with_parallel/hic_results/data/',
-#        outdir = 'results/main/{cline}/hicpro_with_parallel/'
-#    resources:
-#        nodes = 1,
-#        ppn = 4,
-#        mem_mb = 64000
-#    log:
-#        'results/main/{cline}/logs/rule_hicpro_merge_persample_only_with_parallel_{cline}.log'
-#    benchmark:
-#        'results/main/{cline}/benchmarks/rule_hicpro_merge_persample_only_with_parallel_{cline}.bmk'
-#    shell:
-#        """
-#            # getting absoluate paths for data and outdirs, required
-#            # by HiCPro
-#            abs_datadir=$(readlink -f {params.datadir})
-#            abs_outdir=$(readlink -f {params.outdir})
-#
-#            # pipeline (default settings)
-#             HiC-Pro -s merge_persample \
-#                -p \
-#                -i $abs_datadir \
-#                -o $abs_outdir \
-#                -c {input.config} >> {log} 2>&1
-#        """
+            ## run the qsubs
+            echo "# run the qsubs" >> {log} 2>&1
+            cd {params.outdir}
+            #mv HiCPro_step1_.sh HiCPro_proc_hic.sh
+            #qsub HiCPro_proc_hic.sh >> {log} 2>&1
+        """
 
 
 ## Build contact maps for the HiC data with HiCPro (single step)
@@ -591,3 +594,49 @@ rule hicpro_align_only_with_parallel: # localrule
 #                -o $abs_outdir \
 #                -c {input.config} >> {log} 2>&1
 #        """
+#
+#
+# Align the HiC data with merging capability
+rule hicpro_align_only_with_parallel_all: # localrule # testing complete
+    input:
+        fastq_dir = rules.rename_before_hicpro.output.new_dir,
+        gs = rules.download_hg38_files.output.genome_sizes,
+        digestion = re_digestion_file,
+        bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
+        config = ancient(re_config_file),
+    output:
+        bowtie_running = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/all.running')
+    params:
+        datadir = 'results/main/{cline}/hicpro/renamed_fastqs/', # part of rule rename_before_hicpr
+        outdir = 'results/main/{cline}/hicpro_with_parallel/',
+    log:
+        'results/main/{cline}/logs/rule_hicpro_align_with_parallel_only_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_hicpro_align_only_with_parallel_{cline}.bmk'
+    shell:
+        """
+            # remove the snakemake made dir since HiCPro wants to make it
+            rm -r {params.outdir}
+
+            # getting absoluate paths for data and outdirs, required
+            # by HiCPro
+            abs_datadir=$(readlink -f {params.datadir})
+            abs_outdir=$(readlink -f {params.outdir})
+
+            # running with setting -s so that it runs only the alignment
+            # pipeline (default settings), qsub jobs are automatically submitted
+            echo "# running with setting -s so that it runs only the alignment" >> {log} 2>&1
+            /home/jreyna/software/HiC-Pro-Full/HiC-Pro-3.0.0/bin/HiC-Pro \
+                    -p \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1 || cd {params.outdir}
+
+            # submit step 1 # automatic submissions are not working, will improve in the future
+            #echo "# submit step 1" >> {log} 2>&1
+            #qids=$(qsub -w {params.outdir} {params.outdir}/HiCPro_step1_.sh) >> {log} 2>&1
+
+            # submit step 2 with a hold
+            #echo "# submit step 2 with a hold" >> {log} 2>&1
+            #qsub -w {params.outdir} -W depend=afterokarray:$qids {params.outdir}/HiCPro_step2_.sh >> {log} 2>&1
+        """

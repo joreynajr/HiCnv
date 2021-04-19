@@ -76,17 +76,6 @@ rule filter_refeature_for_main_chrs:
         """
 
 
-
-
-
-
-
-
-
-
-
-
-
 # get the restriction enzyme digestion files
 def re_fgc_map_file(wildcards):
     re = SAMPLESHEET.loc[wildcards.cline, 're']
