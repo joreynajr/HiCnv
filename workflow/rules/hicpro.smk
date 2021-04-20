@@ -365,10 +365,60 @@ rule hicpro_ice_norm_only: #  merging update complete
         """
 
 
+# Renaming because _1 and _2 in file names can caused a problem
+# which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
+rule rename_before_hicpro_with_parallel:
+    input:
+        unpack(get_r1_r2_fastqs)
+    output:
+        new_dir = directory('results/main/{cline}/reads/renamed_fastqs_with_parallel/'),
+        rename_complete = touch('results/main/{cline}/reads/renamed_fastqs_with_parallel/renamed.complete')
+    log:
+        'results/main/{cline}/logs/rule_rename_before_hicpro_with_parallel_{cline}.log'
+    shell:
+        """
+            mkdir -p {output.new_dir}
+
+            # renaming R1's
+            for fn in {input.r1s};
+            do
+                # get the new fn
+                new_fn=$(basename $fn | sed "s/_1\.fastq\.gz/_R1.fastq.gz/")
+
+                # get the current srr
+                srr=$(basename $fn | sed "s/_.*//")
+
+                # make an srr based directory
+                new_dir="{output.new_dir}/${{srr}}"
+                mkdir $new_dir
+
+                # symlink the renamed fn to an srr based directory
+                new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
+                abs_orig=$(readlink -f $fn)
+                ln -s $abs_orig $new_fn
+            done
+
+            # renaming R2's
+            for fn in {input.r2s};
+            do
+                # get the new fn
+                new_fn=$(basename $fn | sed "s/_2\.fastq\.gz/_R2.fastq.gz/")
+
+                # get the current srr
+                srr=$(basename $fn | sed "s/_.*//")
+
+                # symlink the renamed fn to an srr based directory
+                new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
+                abs_orig=$(readlink -f $fn)
+                ln -s $abs_orig $new_fn
+            done
+        """
+
+
 # Align the HiC data with merging capability
 rule hicpro_align_only_with_parallel_all: # localrule # testing complete
     input:
-        fastq_dir = rules.rename_before_hicpro.output.new_dir,
+        fastq_dir = rules.rename_before_hicpro_with_parallel.output.new_dir,
         gs = rules.download_hg38_files.output.genome_sizes,
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
@@ -376,7 +426,7 @@ rule hicpro_align_only_with_parallel_all: # localrule # testing complete
     output:
         bowtie_running = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/all.running')
     params:
-        datadir = 'results/main/{cline}/hicpro/renamed_fastqs/', # part of rule rename_before_hicpr
+        datadir = 'results/main/{cline}/hicpro/renamed_fastqs_with_parallel/', # part of rule rename_before_hicpr
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
     log:
         'results/main/{cline}/logs/rule_hicpro_align_with_parallel_only_{cline}.log'
@@ -389,7 +439,7 @@ rule hicpro_align_only_with_parallel_all: # localrule # testing complete
 
             # getting absoluate paths for data and outdirs, required
             # by HiCPro
-            abs_datadir=$(readlink -f {params.datadir})
+            abs_datadir=$(readlink -f {input.fastq_dir})
             abs_outdir=$(readlink -f {params.outdir})
 
             # running with setting -s so that it runs only the alignment
