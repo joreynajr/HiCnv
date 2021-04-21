@@ -139,7 +139,7 @@ rule download_paired_fastq_encode:
 #        "cat /etc/os-release > {output}"
 
 
-
 include: "rules/hicpro.smk"
+include: "rules/hicpro_with_parallel.smk"
 include: "rules/hicnv.smk"
 localrules: rename_before_hicpro, hicpro_align_only_with_parallel_all
