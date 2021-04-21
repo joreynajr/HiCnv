@@ -376,7 +376,7 @@ rule rename_before_hicpro_with_parallel:
     log:
         'results/main/{cline}/logs/rule_rename_before_hicpro_with_parallel_{cline}.log'
     shell:
-        """
+        r"""
             mkdir -p {output.new_dir}
 
             # renaming R1's
@@ -459,3 +459,31 @@ rule hicpro_align_only_with_parallel_all: # localrule # testing complete
             #echo "# submit step 2 with a hold" >> {log} 2>&1
             #qsub -w {params.outdir} -W depend=afterokarray:$qids {params.outdir}/HiCPro_step2_.sh >> {log} 2>&1
         """
+
+
+# Splitting the original R1 and R2 fastq's because they are really big
+# Current this is set up to run serially but by adding an srr wildcard
+# I can set it up to run in a more parallel way. The idea right now
+# is that you would have a single large >70gb file per sample (bio-rep).
+rule split_before_hicpro:
+    input:
+        unpack(get_r1_r2_fastqs)
+    output:
+        outdir = directory('results/main/{cline}/reads/split_fastqs/'),
+        split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
+    log:
+        'results/main/{cline}/logs/rule_split_before_hicpro_{cline}.log'
+    shell:
+        r"""
+            mkdir -p {output.outdir}
+
+            # splitting the R1's
+            for fq in {input.r1s} {input.r2s};
+            do
+                {config[python_hicpro_3.0.0]} {config[hicpro_3.0.0_dir]}/bin/utils/split_reads.py \
+                                    --results_folder {output.outdir} \
+                                    --nreads 10000000 \
+                                    ${{fq}}
+            done
+        """
+

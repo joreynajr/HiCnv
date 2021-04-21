@@ -13,7 +13,6 @@ wildcard_constraints:
     srr = 'SRR[A-Za-z0-9]{7,8}',
     lib = 'ENC[A-Za-z0-9]{8}'
 
-localrules: rename_before_hicpro
 
 # Downloading hg38 files as needed
 rule download_hg38_files:
@@ -130,5 +129,17 @@ rule download_paired_fastq_encode:
             wget -O {output.r2} $r2_link
         """
 
+
+#rule test:
+#    singularity:
+#        "resources/software/hicpro_latest_ubuntu.img"
+#    output:
+#        "out.txt"
+#    shell:
+#        "cat /etc/os-release > {output}"
+
+
+
 include: "rules/hicpro.smk"
 include: "rules/hicnv.smk"
+localrules: rename_before_hicpro, hicpro_align_only_with_parallel_all
