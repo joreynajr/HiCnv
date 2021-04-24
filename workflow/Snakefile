@@ -56,7 +56,7 @@ rule bowtie2_index_ref_genome:
         'results/refs/hg38/benchmarks/rule_bowtie2_index_ref_genome.bmk'
     shell:
         r"""
-            bowtie2-build {input} {params.base_out} >> {log} 2>&1
+            {config[bowtie2_dir]}/bowtie2-build {input} {params.base_out} >> {log} 2>&1
         """
 
 
