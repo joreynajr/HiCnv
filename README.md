@@ -45,9 +45,7 @@ Rules within this workflow attempt to facilitate the installation of a few key s
   - changepoint ([link](https://cran.r-project.org/web/packages/changepoint/changepoint.pdf))
   - bioconductor ([link](https://bioconductor.org/install/))
   - ...
-- HiCPro - Git download the HiCPro repository using: `git clone git@github.com:nservant/HiC-Pro.git`
-- HiCPro Docker img (installed by workflow)
-- Singularity ([link](https://singularity.lbl.gov/install-linux))
+- HiCPro 3.0.0 - Git download the HiCPro repository using: `git clone git@github.com:nservant/HiC-Pro.git`
 - fasterq-dump ([link](https://github.com/ncbi/sra-tools/wiki/HowTo:-fasterq-dump))
 
 ## Usage
@@ -55,8 +53,9 @@ Rules within this workflow attempt to facilitate the installation of a few key s
 The Snakemake config file is located within `config/config.yaml`, please set the following variables (using the YAML format already provided) with paths to the correponding resources or software:
 <pre>
 R4: &#60;path to R 4.X.X with library dependencies installed&#62;
-python2: &#60;path to Python 2.7 with package dependencies installed&#62;
+python_hicpro: &#60;path to Python 3.7 with package dependencies for HiC-Pro installed ([check out more details here](https://github.com/nservant/HiC-Pro#using-hic-pro-through-conda))&#62;
 hicpro_dir: &#60;path to the main HiCPro installation directory&#62; (don't need complete installation with `make` just `git clone git@github.com:nservant/HiC-Pro.git`)
+python2: &#60;path to Python 2.7 with package dependencies installed&#62;
 </pre>
 
 ### Process the hg38 reference files
