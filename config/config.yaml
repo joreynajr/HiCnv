@@ -1,5 +1,4 @@
 R4: "/mnt/BioHome/jreyna/R-Versions/R-4.0.3/bin/Rscript"
+hicpro_dir: "/mnt/BioHome/jreyna/software/HiC-Pro-Full/HiC-Pro-3.0.0/"
+python_hicpro: "/mnt/BioHome/jreyna/software/anaconda3/envs/HiC-Pro_v3.0.0/bin/python"
 python2: "/mnt/BioHome/jreyna/software/anaconda3/envs/python_2.7.18/bin/python"
-hicpro_dir: "/mnt/BioHome/jreyna/software/HiC-Pro/"
-python_hicpro_3.0.0: "/mnt/BioHome/jreyna/software/anaconda3/envs/HiC-Pro_v3.0.0/bin/python"
-hicpro_3.0.0_dir: "/mnt/BioHome/jreyna/software/HiC-Pro/"

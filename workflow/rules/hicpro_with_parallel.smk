@@ -49,6 +49,7 @@ rule rename_before_hicpro_with_parallel:
 
 
 # Align the HiC data with merging capability
+# conda environments not working(?), left it for now
 rule hicpro_align_only_with_parallel_all: # localrule
     input:
         fastq_dir = rules.rename_before_hicpro_with_parallel.output.new_dir,
@@ -65,6 +66,8 @@ rule hicpro_align_only_with_parallel_all: # localrule
         'results/main/{cline}/logs/rule_hicpro_align_with_parallel_only_{cline}.log'
     benchmark:
         'results/main/{cline}/benchmarks/rule_hicpro_align_only_with_parallel_{cline}.bmk'
+    conda:
+        'workflow/envs/HiC-Pro-3.0.0.yml'
     shell:
         """
             # remove the snakemake made outdir since HiCPro wants to make it
@@ -104,6 +107,8 @@ rule split_before_hicpro:
     output:
         outdir = directory('results/main/{cline}/reads/split_fastqs/'),
         split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
+    params:
+        nreads = 50000000
     log:
         'results/main/{cline}/logs/rule_split_before_hicpro_{cline}.log'
     shell:
@@ -113,9 +118,9 @@ rule split_before_hicpro:
             # splitting the R1's
             for fq in {input.r1s} {input.r2s};
             do
-                {config[python_hicpro_3.0.0]} {config[hicpro_3.0.0_dir]}/bin/utils/split_reads.py \
+                {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/split_reads.py \
                                     --results_folder {output.outdir} \
-                                    --nreads 10000000 \
+                                    --nreads {params.nreads} \
                                     ${{fq}}
             done
         """

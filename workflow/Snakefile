@@ -67,14 +67,12 @@ rule digest_reference_genome:
     input:
         'results/refs/hg38/hg38.fa'
     output:
-        mboi = 'results/refs/restriction_enzymes/hg38_mboi_digestion.bed',
-        hindiii = 'results/refs/restriction_enzymes/hg38_hindiii_digestion.bed'
+        dig = 'results/refs/restriction_enzymes/hg38_{re}_digestion.bed',
     log:
         'results/refs/hg38/logs/rule_digest_reference_genome.log'
     shell:
         """
-            {config[python2]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r mboi -o {output.mboi} {input}
-            {config[python2]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r hindiii -o {output.hindiii} {input}
+            {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r mboi -o {output.dig} {input}
         """
 
 
@@ -128,15 +126,6 @@ rule download_paired_fastq_encode:
             wget -O {output.r1} $r1_link
             wget -O {output.r2} $r2_link
         """
-
-
-#rule test:
-#    singularity:
-#        "resources/software/hicpro_latest_ubuntu.img"
-#    output:
-#        "out.txt"
-#    shell:
-#        "cat /etc/os-release > {output}"
 
 
 include: "rules/hicpro.smk"
