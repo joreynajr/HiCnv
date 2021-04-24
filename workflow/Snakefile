@@ -69,7 +69,7 @@ rule digest_reference_genome:
     output:
         dig = 'results/refs/restriction_enzymes/hg38_{re}_digestion.bed',
     log:
-        'results/refs/hg38/logs/rule_digest_reference_genome.log'
+        'results/refs/hg38/logs/rule_digest_reference_genome_{re}.log'
     shell:
         """
             {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r mboi -o {output.dig} {input}
