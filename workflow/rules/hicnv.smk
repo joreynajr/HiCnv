@@ -10,8 +10,8 @@ rule download_hg38_mappability: # Restruct test done
     shell:
         r"""
             ## Check the https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/ to download genome specific mappability files
-            #wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \
-            #    -O {params.map} >> {log} 2>&1
+            wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \
+                -O {params.map} >> {log} 2>&1
 
             ## Process the bigWig file and create bedGraph file
             workflow/scripts/bigWigToBedGraph {params.map} {params.bedgraph} >> {log} 2>&1
