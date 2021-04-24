@@ -28,7 +28,7 @@ rule download_hg38_files:
     log:
         'results/refs/hg38/logs/rule_download_hg38_files.out'
     shell:
-        """
+        r"""
             wget -O {output.genome} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz 2> {log}
             wget -O {output.genome_sizes} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes 2> {log}
             wget -O {params.centromeres} https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/centromeres.txt.gz 2> {log}
@@ -55,7 +55,7 @@ rule bowtie2_index_ref_genome:
     benchmark:
         'results/refs/hg38/benchmarks/rule_bowtie2_index_ref_genome.bmk'
     shell:
-        """
+        r"""
             bowtie2-build {input} {params.base_out} >> {log} 2>&1
         """
 
@@ -71,8 +71,11 @@ rule digest_reference_genome:
     log:
         'results/refs/hg38/logs/rule_digest_reference_genome_{re}.log'
     shell:
-        """
-            {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/digest_genome.py -r mboi -o {output.dig} {input}
+        r"""
+            {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/digest_genome.py \
+                    -r {wildcards.re} \
+                    -o {output.dig} \
+                    {input} >> {log} 2>&1
         """
 
 
@@ -97,7 +100,7 @@ rule download_paired_fastq_sra:
         nodes = 1,
         ppn = 4
     shell:
-        """
+        r"""
             grabseqs sra -m {params.meta} \
                         -o {params.outdir} \
                         -r 4 \
@@ -116,7 +119,7 @@ rule download_paired_fastq_encode:
     log:
         'results/main/{cline}/logs/rule_download_paired_fastq_encode_{cline}_{lib}.log'
     shell:
-        """
+        r"""
             r1_lib=$(head -n 1 {input.lib_file} | cut -f 1)
             r1_link="https://www.encodeproject.org/files/$r1_lib/@@download/$r1_lib.fastq.gz"
 
