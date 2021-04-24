@@ -5,16 +5,17 @@ rule download_hg38_mappability: # Restruct test done
         bedgraph = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.bedGraph'
     output:
         sorted_bg = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
+    log:
+        'logs/rule_download_hg38_mappability.log'
     shell:
-        """
+        r"""
             ## Check the https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/ to download genome specific mappability files
-            wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \\
-                -O {params.map}
+            #wget https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/hg38/k50.Umap.MultiTrackMappability.bw \
+            #    -O {params.map} >> {log} 2>&1
 
             ## Process the bigWig file and create bedGraph file
-            bigWigToBedGraph {params.map} {params.bedgraph}
-            sort -k 1,1 -k2,2n {params.bedgraph} > {output}
-
+            workflow/scripts/bigWigToBedGraph {params.map} {params.bedgraph} >> {log} 2>&1
+            sort -k 1,1 -k2,2n {params.bedgraph} > {output} >> {log} 2>&1
             rm {params.bedgraph}
         """
 
@@ -68,7 +69,7 @@ rule filter_refeature_for_main_chrs:
     log:
         'results/refs/restriction_enzymes/logs/rule_filter_refeature_for_main_chrs_{re}.log'
     shell:
-        """
+        r"""
             python workflow/scripts/filter_chrs_from_bed.py \
                 --bed-like {input.refeat} \
                 --include-list {input.chr_list} \
@@ -104,7 +105,7 @@ rule make_perREfragStats:
     log:
         'results/main/{cline}/logs/rule_make_perREfragStats_{cline}.log'
     shell:
-        """
+        r"""
               # Merge singletons
               # pysam will through some warnings about a missing index
               # but this can be ignored according for forums
@@ -149,7 +150,7 @@ rule filter_perREfragStats_for_main_chrs:
     log:
         'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}.log'
     shell:
-        """
+        r"""
             python workflow/scripts/filter_chrs_from_bed.py \
                 --bed-like {input.frag_stats} \
                 --include-list {input.chr_list} \
@@ -183,7 +184,7 @@ rule run_hicnv:
         ppn = 4
     #shadow: 'minimal'
     shell:
-        """
+        r"""
             {config[R4]} workflow/scripts/hicnv_v2.R \
                 --refeature={input.feat} \
                 --coverage={input.cov} \

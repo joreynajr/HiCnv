@@ -1,8 +1,63 @@
-# Renaming because _1 and _2 in file names can caused a problem
-# which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
-rule rename_before_hicpro_with_parallel:
+# Splitting the original R1 and R2 fastq's because they are really big
+# Current this is set up to run serially but by adding an srr wildcard
+# I can set it up to run in a more parallel way. The idea right now
+# is that you would have a single large >70gb file per sample (bio-rep).
+rule split_before_hicpro:
     input:
         unpack(get_r1_r2_fastqs)
+    output:
+        outdir = directory('results/main/{cline}/reads/split_fastqs/'),
+        split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
+    params:
+        nreads = 50000000
+    log:
+        'results/main/{cline}/logs/rule_split_before_hicpro_{cline}.log'
+    shell:
+        r"""
+            mkdir -p {output.outdir}
+
+            # splitting the R1's
+            for fq in {input.r1s} {input.r2s};
+            do
+                {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/split_reads.py \
+                                    --results_folder {output.outdir} \
+                                    --nreads {params.nreads} \
+                                    ${{fq}}
+            done
+        """
+
+
+# Helper function to obtain all for a given cell line
+# Make sure to download the accession list from SRA
+def get_split_r1_r2_fastqs(wildcards):
+
+    # init lists to collect r1 and r2 files
+    r1s = []
+    r2s = []
+
+    # list the accession files for this sample
+    fq_list = glob.glob('results/main/{cline}/reads/split_fastqs/*fastq'.format(cline=wildcards.cline))
+
+    # parse through the accession lists and get teh r1 and r2 paths
+    for fq in fq_list:
+        read_num = os.path.basename(fq).split('_')[-1].split('.fastq')[0]
+        if read_num == 'R1':
+            r1s.append(fq)
+        else:
+            r2s.append(fq)
+    # return a dict to unpack
+    d = {'r1s': r1s, 'r2s': r2s}
+    return(d)
+
+
+
+# Renaming because _1 and _2 in file names can caused a problem
+# which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
+rule rename_before_hicpro_with_parallel: #local rule
+    input:
+        unpack(get_split_r1_r2_fastqs),
+        split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
+    params:
     output:
         new_dir = directory('results/main/{cline}/reads/renamed_fastqs_with_parallel/'),
         rename_complete = touch('results/main/{cline}/reads/renamed_fastqs_with_parallel/renamed.complete')
@@ -23,7 +78,7 @@ rule rename_before_hicpro_with_parallel:
 
                 # make an srr based directory
                 new_dir="{output.new_dir}/${{srr}}"
-                mkdir $new_dir
+                mkdir -p $new_dir
 
                 # symlink the renamed fn to an srr based directory
                 new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
@@ -97,30 +152,3 @@ rule hicpro_align_only_with_parallel_all: # localrule
         """
 
 
-# Splitting the original R1 and R2 fastq's because they are really big
-# Current this is set up to run serially but by adding an srr wildcard
-# I can set it up to run in a more parallel way. The idea right now
-# is that you would have a single large >70gb file per sample (bio-rep).
-rule split_before_hicpro:
-    input:
-        unpack(get_r1_r2_fastqs)
-    output:
-        outdir = directory('results/main/{cline}/reads/split_fastqs/'),
-        split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
-    params:
-        nreads = 50000000
-    log:
-        'results/main/{cline}/logs/rule_split_before_hicpro_{cline}.log'
-    shell:
-        r"""
-            mkdir -p {output.outdir}
-
-            # splitting the R1's
-            for fq in {input.r1s} {input.r2s};
-            do
-                {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/split_reads.py \
-                                    --results_folder {output.outdir} \
-                                    --nreads {params.nreads} \
-                                    ${{fq}}
-            done
-        """
