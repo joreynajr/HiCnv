@@ -1,16 +1,3 @@
-# HiCPro documentation https://github.com/nservant/HiC-Pro
-# Download the HiCPro singularity img file which as linked
-# under the HiCPro documentation section called
-# "Using HiC-Pro through Singularity", it's the first sentence.
-rule download_hicpro_singularity_img:
-    output:
-        hicpro_img = 'resources/software/hicpro_latest_ubuntu.img'
-    shell:
-        """
-            wget -O {output} https://zerkalo.curie.fr/partage/HiC-Pro/singularity_images/hicpro_latest_ubuntu.img
-        """
-
-
 # get the restriction enzyme digestion files
 def re_digestion_file(wildcards):
     re = SAMPLESHEET.loc[wildcards.cline, 're']
@@ -131,7 +118,6 @@ rule hicpro_align_only: # merging update complete
         digestion = re_digestion_file,
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         bowtie_complete = touch('results/main/{cline}/hicpro/bowtie_results/bowtie.complete')
     params:
@@ -154,11 +140,10 @@ rule hicpro_align_only: # merging update complete
 
             # running with setting -s so that it runs only the alignment 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s mapping \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
+            HiC-Pro -s mapping \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1
         """
 
 
@@ -167,7 +152,6 @@ rule hicpro_quality_checks_only: #  merging update incomplete
     input:
         bams = rules.hicpro_align_only.output.bowtie_complete,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         qc = directory('results/main/{cline}/hicpro/hic_results/pic/{cline}')
     params:
@@ -187,11 +171,10 @@ rule hicpro_quality_checks_only: #  merging update incomplete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s quality_checks \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
+            HiC-Pro -s quality_checks \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1
         """
 
 
@@ -200,7 +183,6 @@ rule hicpro_hic_proc_only: # merging update complete
     input:
         bams = rules.hicpro_align_only.output.bowtie_complete,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp_complete = touch('results/main/{cline}/hicpro/hic_results/data/{cline}/process.complete')
     params:
@@ -222,11 +204,10 @@ rule hicpro_hic_proc_only: # merging update complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s proc_hic \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
+            HiC-Pro -s proc_hic \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1
         """
 
 
@@ -255,7 +236,6 @@ rule hicpro_merge_persample_only: #  merging update complete
     input:
         vp_complete = rules.hicpro_hic_proc_only.output.vp_complete,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         vp = 'results/main/{cline}/hicpro/hic_results/data/{cline}/{cline}.allValidPairs',
         stats = 'results/main/{cline}/hicpro/hic_results/stats/{cline}/{cline}_allValidPairs.mergestat'
@@ -278,11 +258,10 @@ rule hicpro_merge_persample_only: #  merging update complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s merge_persample \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
+            HiC-Pro -s merge_persample \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1
         """
 
 
@@ -293,7 +272,6 @@ rule hicpro_build_contact_maps_only: #  merging update complete
     input:
         merged_samples = rules.hicpro_merge_persample_only.output.vp,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         mats = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/'),
         mats_complete = touch('results/main/{cline}/hicpro/hic_results/matrix/{cline}/raw/mats.complete')
@@ -316,11 +294,10 @@ rule hicpro_build_contact_maps_only: #  merging update complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
-                    HiC-Pro -s build_contact_maps \
-                            -i $abs_datadir \
-                            -o $abs_outdir \
-                            -c {input.config} >> {log} 2>&1
+            HiC-Pro -s build_contact_maps \
+                    -i $abs_datadir \
+                    -o $abs_outdir \
+                    -c {input.config} >> {log} 2>&1
         """
 
 
@@ -333,7 +310,6 @@ rule hicpro_ice_norm_only: #  merging update complete
     input:
         mats_complete = rules.hicpro_build_contact_maps_only.output.mats_complete,
         config = ancient(re_config_file),
-        hicpro_img = rules.download_hicpro_singularity_img.output.hicpro_img
     output:
         iced = directory('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/'),
         iced_complete = touch('results/main/{cline}/hicpro/hic_results/matrix/{cline}/iced/iced.complete')
@@ -356,7 +332,6 @@ rule hicpro_ice_norm_only: #  merging update complete
             abs_outdir=$(readlink -f {params.outdir})
 
             # pipeline (default settings)
-            singularity exec {input.hicpro_img} \
                     HiC-Pro -s ice_norm \
                             -i $abs_datadir \
                             -o $abs_outdir \
