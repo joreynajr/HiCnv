@@ -6,7 +6,7 @@ rule download_hg38_mappability: # Restruct test done
     output:
         sorted_bg = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
     log:
-        'logs/rule_download_hg38_mappability.log'
+        'results/refs/hg38_mappability/logs/rule_download_hg38_mappability.log'
     shell:
         r"""
             ## Check the https://www.pmgenomics.ca/hoffmanlab/proj/bismap/trackhub/ to download genome specific mappability files
