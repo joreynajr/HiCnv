@@ -48,7 +48,7 @@ rule process_refeature: # Restruct test done
             bedtools map -a {params.gc} -b {input.map} -c 4 -o mean > {params.gc_map} 2> {log}
 
             # Create F_GC_MAP file
-            perl scripts/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map} 2> {log}
+            perl workflow/scripts/F_GC_MAP_Files/gc_map_per_fragment.pl {params.gc_map} {input.dig} > {params.f_gc_map} 2> {log}
 
             # Sort the final F_GC_MAP file
             bedtools sort -i {params.f_gc_map} > {output} 2> {log}
