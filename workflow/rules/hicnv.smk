@@ -15,7 +15,7 @@ rule download_hg38_mappability: # Restruct test done
 
             ## Process the bigWig file and create bedGraph file
             workflow/scripts/bigWigToBedGraph {params.map} {params.bedgraph} >> {log} 2>&1
-            sort -k 1,1 -k2,2n {params.bedgraph} > {output} >> {log} 2>&1
+            sort -k 1,1 -k2,2n {params.bedgraph} > {output} 2>> {log}
             rm {params.bedgraph} >> {log} 2>&1
         """
 
