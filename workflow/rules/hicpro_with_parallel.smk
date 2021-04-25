@@ -12,6 +12,10 @@ rule split_before_hicpro:
         nreads = 50000000
     log:
         'results/main/{cline}/logs/rule_split_before_hicpro_{cline}.log'
+    resources:
+        nodes = 1,
+        ppn = 1,
+        mem_mb = 8000
     shell:
         r"""
             mkdir -p {output.outdir}
@@ -38,10 +42,10 @@ def get_split_r1_r2_fastqs(wildcards):
     # list the accession files for this sample
     fq_list = glob.glob('results/main/{cline}/reads/split_fastqs/*fastq'.format(cline=wildcards.cline))
 
-    # parse through the accession lists and get teh r1 and r2 paths
+    # parse through the accession lists and get the r1 and r2 paths
     for fq in fq_list:
         read_num = os.path.basename(fq).split('_')[-1].split('.fastq')[0]
-        if read_num == 'R1':
+        if read_num == '1':
             r1s.append(fq)
         else:
             r2s.append(fq)
@@ -71,10 +75,10 @@ rule rename_before_hicpro_with_parallel: #local rule
             for fn in {input.r1s};
             do
                 # get the new fn
-                new_fn=$(basename $fn | sed "s/_1\.fastq\.gz/_R1.fastq.gz/")
+                new_fn=$(basename $fn | sed "s/_1\.fastq/_R1.fastq/")
 
                 # get the current srr
-                srr=$(basename $fn | sed "s/_.*//")
+                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9]*\)_.*$/\1/")
 
                 # make an srr based directory
                 new_dir="{output.new_dir}/${{srr}}"
@@ -90,10 +94,10 @@ rule rename_before_hicpro_with_parallel: #local rule
             for fn in {input.r2s};
             do
                 # get the new fn
-                new_fn=$(basename $fn | sed "s/_2\.fastq\.gz/_R2.fastq.gz/")
+                new_fn=$(basename $fn | sed "s/_2\.fastq/_R2.fastq/")
 
                 # get the current srr
-                srr=$(basename $fn | sed "s/_.*//")
+                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9]*\)_.*$/\1/")
 
                 # symlink the renamed fn to an srr based directory
                 new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
@@ -102,10 +106,9 @@ rule rename_before_hicpro_with_parallel: #local rule
             done
         """
 
-
 # Align the HiC data with merging capability
 # conda environments not working(?), left it for now
-rule hicpro_align_only_with_parallel_all: # localrule
+rule hicpro_with_parallel: # localrule
     input:
         fastq_dir = rules.rename_before_hicpro_with_parallel.output.new_dir,
         gs = rules.download_hg38_files.output.genome_sizes,
@@ -118,7 +121,7 @@ rule hicpro_align_only_with_parallel_all: # localrule
         datadir = 'results/main/{cline}/hicpro/renamed_fastqs_with_parallel/', # part of rule rename_before_hicpr
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
     log:
-        'results/main/{cline}/logs/rule_hicpro_align_with_parallel_only_{cline}.log'
+        'results/main/{cline}/logs/rule_hicpro_with_parallel_{cline}.log'
     benchmark:
         'results/main/{cline}/benchmarks/rule_hicpro_align_only_with_parallel_{cline}.bmk'
     conda:
