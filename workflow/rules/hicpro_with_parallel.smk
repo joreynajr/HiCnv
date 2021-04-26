@@ -60,8 +60,7 @@ def get_split_r1_r2_fastqs(wildcards):
 rule rename_before_hicpro_with_parallel: #local rule
     input:
         unpack(get_split_r1_r2_fastqs),
-        split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
-    params:
+        split_complete = 'results/main/{cline}/reads/split_fastqs/split.complete'
     output:
         new_dir = directory('results/main/{cline}/reads/renamed_fastqs_with_parallel/'),
         rename_complete = touch('results/main/{cline}/reads/renamed_fastqs_with_parallel/renamed.complete')
@@ -116,14 +115,12 @@ rule hicpro_with_parallel: # localrule
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient(re_config_file),
     output:
-        bowtie_running = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/all.running')
+        qsubs_written = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/qsubs.written')
     params:
         datadir = 'results/main/{cline}/hicpro/renamed_fastqs_with_parallel/', # part of rule rename_before_hicpr
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
     log:
         'results/main/{cline}/logs/rule_hicpro_with_parallel_{cline}.log'
-    benchmark:
-        'results/main/{cline}/benchmarks/rule_hicpro_align_only_with_parallel_{cline}.bmk'
     conda:
         'workflow/envs/HiC-Pro-3.0.0.yml'
     shell:
@@ -143,15 +140,35 @@ rule hicpro_with_parallel: # localrule
                     -p \
                     -i $abs_datadir \
                     -o $abs_outdir \
-                    -c {input.config} >> {log} 2>&1 || cd {params.outdir}
-
-            # submit step 1 # automatic submissions are not working, will improve in the future
-            #echo "# submit step 1" >> {log} 2>&1
-            #qids=$(qsub -w {params.outdir} {params.outdir}/HiCPro_step1_.sh) >> {log} 2>&1
-
-            # submit step 2 with a hold; same problem as qsub with step 1
-            #echo "# submit step 2 with a hold" >> {log} 2>&1
-            #qsub -w {params.outdir} -W depend=afterokarray:$qids {params.outdir}/HiCPro_step2_.sh >> {log} 2>&1
+                    -c {input.config} >> {log} 2>&1
         """
 
+
+# After HiCPro genereates qsubs I submit them in a separate rule,
+# for technical reasons I wasn't able to merge this rule
+# and the preceeding rule, there seems to be some error signaling by
+# HiC-Pro after it's done running which immediately stops the snakemake
+# rule and nothing else can be run so this extra rule is essential. Also,
+# I don't do any logging here because you have to cd into a different
+# directory and that affects the pathing on the logs; it's such a simple
+# rule that I don't think a log is necessary, you can make it work but 
+# not work the effort.
+rule hicpro_with_parallel_started: # localrule
+    input:
+        qsubs_written = rules.hicpro_with_parallel.output.qsubs_written
+    output:
+        qsubs_started = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/qsubs.started')
+    params:
+        outdir = 'results/main/{cline}/hicpro_with_parallel/',
+    shell:
+        """
+            # submit step 1
+            echo "# submit step 1"
+            cd {params.outdir} # need to run from the outdir, required by HiCPro
+            qids=$(qsub HiCPro_step1_.sh)
+
+            # submit step 2 with a hold
+            echo "# submit step 2 with a hold"
+            qsub -W depend=afterokarray:$qids HiCPro_step2_.sh
+        """
 
