@@ -9,6 +9,7 @@ from pandas import read_table
 # Loading the sampleheet for global use
 SAMPLESHEET = read_table('config/samplesheet.tsv', index_col=0)
 
+# Setting wildcard constraints
 wildcard_constraints:
     srr = 'SRR[A-Za-z0-9]{7,8}',
     lib = 'ENC[A-Za-z0-9]{8}'
@@ -70,10 +71,22 @@ rule digest_reference_genome:
         dig = 'results/refs/restriction_enzymes/hg38_{re}_digestion.bed',
     log:
         'results/refs/hg38/logs/rule_digest_reference_genome_{re}.log'
+    message:
+        """
+            It is very important that the config/re_metadata.tsv is updated with
+            the restriction enzyme you are interested in, otherwise rule will fail.
+            Currently I support what HiC-Pro supports as of 2021.04.27 and includes:
+                - mboi
+                - dpni
+                - bglii
+                - hindiii
+        """
     shell:
         r"""
+            # old version of digest_genome used this format -r {wildcards.re} \
+            seq_pat=$(grep {wildcards.re} config/re_metadata.tsv | cut -f 2)
             {config[python_hicpro]} {config[hicpro_dir]}/bin/utils/digest_genome.py \
-                    -r {wildcards.re} \
+                    -r $seq_pat \
                     -o {output.dig} \
                     {input} >> {log} 2>&1
         """
@@ -135,4 +148,4 @@ include: "rules/hicpro.smk"
 include: "rules/hicpro_with_parallel.smk"
 include: "rules/hicnv.smk"
 
-localrules: rename_before_hicpro, rename_before_hicpro_with_parallel, hicpro_with_parallel
+localrules: rename_before_hicpro, rename_before_hicpro_with_parallel, hicpro_with_parallel, hicpro_with_parallel_started
