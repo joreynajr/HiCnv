@@ -148,4 +148,8 @@ include: "rules/hicpro.smk"
 include: "rules/hicpro_with_parallel.smk"
 include: "rules/hicnv.smk"
 
-localrules: rename_before_hicpro, rename_before_hicpro_with_parallel, hicpro_with_parallel, hicpro_with_parallel_started
+localrules: rename_before_hicpro
+localrules: rename_before_hicpro_with_parallel
+localrules: hicpro_with_parallel
+localrules: hicpro_with_parallel_started
+localrules: plot_hicnv_bedpe
