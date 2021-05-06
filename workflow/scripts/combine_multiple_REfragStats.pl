@@ -1,7 +1,7 @@
 # Super fast perl script to merge REfragStats files
 # Usage: perl combine_multiple_REfragStats.pl <txt file with a list of REfragStat paths> <combined output path>
 my @list = `cat $ARGV[0]`;
-my combined_file = $ARGV[1];
+my $combined_file = $ARGV[1];
 my %merged;
 my %check;
 my @bed;
@@ -25,7 +25,7 @@ foreach my $l (@list) {
         $merged{$chr}{$start}{$end}{9} += (split(/\s+/,$frag))[11];
         if ($check{$chr}{$start}{$end} eq "" ){
             push(@bed, "$chr\t$start\t$end");
-            $check{$chr{$start}{$end} = 1;
+            $check{$chr}{$start}{$end} = 1;
         }
     }
     close in;
