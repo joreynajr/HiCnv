@@ -1,10 +1,12 @@
 # Download the mappability file for hg38 and do processing for HiCnv
-rule download_hg38_mappability: # Restruct test done
+rule download_hg38_mappability:
     params:
         map = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.bw',
         bedgraph = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.bedGraph'
     output:
         sorted_bg = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
+    resources:
+        mem_mb = 16000
     log:
         'results/refs/hg38_mappability/logs/rule_download_hg38_mappability.log'
     shell:
@@ -16,12 +18,12 @@ rule download_hg38_mappability: # Restruct test done
             ## Process the bigWig file and create bedGraph file
             workflow/scripts/bigWigToBedGraph {params.map} {params.bedgraph} >> {log} 2>&1
             sort -k 1,1 -k2,2n {params.bedgraph} > {output} 2>> {log}
-            rm {params.bedgraph} >> {log} 2>&1
+            #rm {params.bedgraph} >> {log} 2>&1
         """
 
 
 # Process the feature file as specified in HiCnv
-rule process_refeature: # Restruct test done
+rule process_refeature:
     input:
         ref = 'results/refs/hg38/hg38.fa',
         dig = 'results/refs/restriction_enzymes/hg38_{re}_digestion.bed',
@@ -33,6 +35,8 @@ rule process_refeature: # Restruct test done
         f_gc_map = 'results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.bed'
     output:
         sorted_feat_map = 'results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.sorted.bed'
+    resources:
+        mem_mb = 16000
     log:
         'results/refs/restriction_enzymes/logs/rule_process_refeature_{re}.log'
     shell:
@@ -88,22 +92,22 @@ def re_fgc_map_file(wildcards):
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule make_perREfragStats:
     input:
-        fwd_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{cline}_1_hg38.bwt2merged.bam',
-        rev_alns = 'results/main/{cline}/hicpro/bowtie_results/bwt2/{cline}/{cline}_2_hg38.bwt2merged.bam',
+        fwd_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R1_hg38.bwt2merged.bam',
+        rev_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R2_hg38.bwt2merged.bam',
         frag = re_digestion_file,
         fgc_map = re_fgc_map_file
     output:
-        frag_stats = 'results/main/{cline}/hicnv/{cline}.perREfragStats'
+        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.perREfragStats'
     params:
-        merged_singletons = 'results/main/{cline}/hicnv/{cline}.bwt2pairs.withSingles.mapq30.bam',
-        outdir = 'results/main/{cline}/hicnv/{cline}_allMap2FragmentsOutput',
+        merged_singletons = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.bwt2pairs.withSingles.mapq30.bam',
+        outdir = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}_allMap2FragmentsOutput',
         prefix = '{cline}_allMap2FragmentsOutput'
     resources:
         nodes = 1,
-        ppn = 2,
+        ppn = 1,
         mem_mb = 50000
     log:
-        'results/main/{cline}/logs/rule_make_perREfragStats_{cline}.log'
+        'results/main/{cline}/logs/rule_make_perREfragStats_{cline}_{srr}_{split}.log'
     shell:
         r"""
               # Merge singletons
@@ -131,11 +135,9 @@ rule make_perREfragStats:
                             -o {params.outdir} >> {log} 2>&1
 
               # Sort the REfragStats
-              cat {params.outdir}/{wildcards.cline}.bwt2pairs.withSingles.mapq30.perREfragStats \
+              cat {params.outdir}/{wildcards.cline}.{wildcards.srr}.{wildcards.split}.bwt2pairs.withSingles.mapq30.perREfragStats \
                             | sort -k1,1 -k2,2n > {output} 2> {log}
           """
-
-
 
 
 # Filtering for chromosomes 1-22 + X.
@@ -146,15 +148,53 @@ rule filter_perREfragStats_for_main_chrs:
         frag_stats = rules.make_perREfragStats.output.frag_stats,
         chr_list = 'resources/chromosome_lists/main_chrs.txt'
     output:
-        frag_stats = 'results/main/{cline}/hicnv/{cline}.chrflt.perREfragStats'
+        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.chrflt.perREfragStats'
     log:
-        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}.log'
+        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}_{srr}_{split}.log'
     shell:
         r"""
             python workflow/scripts/filter_chrs_from_bed.py \
                 --bed-like {input.frag_stats} \
                 --include-list {input.chr_list} \
                 -o {output} >> {log} 2>&1
+        """
+
+
+# Helper function to obtain all perREfragStats for a technical replicate
+def get_tech_rep_chrflt_perREfragStats(wildcards):
+    input_fns = []
+
+    for fn in glob.glob('results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/*_{srr}_R1_hg38.bwt2merged.bam'.format(**wildcards)):
+        split = os.path.basename(fn).split('_')[0]
+        new_input = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.chrflt.perREfragStats'.format(split=split, **wildcards)
+        input_fns.append(new_input)
+    return(sorted(input_fns))
+
+# Create this file as per your restriction fragment.
+# Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
+rule combine_tech_reps_perREfragStats:
+    input:
+        get_tech_rep_chrflt_perREfragStats
+    params:
+        re_fs_list = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.REfragStats.list.txt'
+    output:
+        combined_frag_stats = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.perREfragStats'
+    resources:
+        nodes = 1,
+        ppn = 1,
+        mem_mb = 16000
+    log:
+        'results/main/{cline}/logs/rule_combine_tech_reps_perREfragStats_{cline}_{srr}.log'
+    shell:
+        r"""
+            # separate the inputs by new line character
+            for fn in {input};
+            do
+                echo $fn >> {params.re_fs_list}
+            done
+
+            # run the combine script
+            perl workflow/scripts/combine_multiple_REfragStats.pl {params.re_fs_list} {output} >> {log} 2>&1
         """
 
 
@@ -168,31 +208,84 @@ def re_fgc_map_sorted_chrflt_file(wildcards):
 # Run HiCnv a chromosome at a time
 #rules.make_perREfragStats.output.frag_stats
 #rules.process_refeature.output.sorted_feat_map
+# combined_frag_stats = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.perREfragStats'
 rule run_hicnv:
     input:
         feat = re_fgc_map_sorted_chrflt_file,
-        cov = rules.filter_perREfragStats_for_main_chrs.output.frag_stats
+        cov = rules.combine_tech_reps_perREfragStats.output.combined_frag_stats
     params:
-        outdir = directory('results/main/{cline}/hicnv/')
+        parent_dir = 'results/main/{cline}/hicnv/run/',
     output:
-        'results/main/{cline}/hicnv/{cline}.{cline}_hicnv/CNV_Estimation/{cline}.{cline}.cnv.bedGraph'
+        directory('results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv')
     log:
-        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{cline}.log'
+        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
     benchmark:
-        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{cline}.bmk'
+        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{srr}.bmk'
     resources:
-        ppn = 4
-    #shadow: 'minimal'
+        mem_mb = 25000,
+        ppn = 2
+    shadow: 'full'
     shell:
         r"""
+            # extract the fragment cutoff from the config files
+            re=$(grep {wildcards.cline} config/samplesheet.tsv | cut -f 2)
+            fragcutoff=$(grep $re config/re_metadata.tsv | cut -f 3)
+            echo "Restriction enzyme: ${{re}}" >> {log} 2>&1
+            echo "Fragment cutoff: ${{fragcutoff}}" >> {log} 2>&1
+
+            # run hicnv
             {config[R4]} workflow/scripts/hicnv_v2.R \
                 --refeature={input.feat} \
                 --coverage={input.cov} \
-                --prefix={wildcards.cline} \
-                --fragcutoff=150 \
-                --refchrom=chr1 \
-                --cpu {resources.ppn} >> {log} 2>&1
+                --prefix={wildcards.cline}.{wildcards.srr} \
+                --fragcutoff=$fragcutoff \
+                --cpu {resources.ppn} >> {log} 2>&1 || echo "Failed but saving output for debugging purposes." >> {log} 2>&1
 
-            mkdir -p {params.outdir} >> {log} 2>&1
-            mv {wildcards.cline}_hicnv/ {params.outdir} >> {log} 2>&1
+            # removing the pre-made snakemake outdir
+            mkdir -p {params.parent_dir} >> {log} 2>&1
+
+            # move the HiCnv results to the run folder
+            mv {wildcards.cline}.{wildcards.srr}_hicnv/ {output} >> {log} 2>&1
+        """
+
+
+# make the ini file required for plotting
+rule make_pyGenomeTracks_ini:
+    input:
+        bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
+    output:
+        ini = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.ini'
+    log:
+        'results/main/{cline}/logs/rule_make_pyGenomeTracks_{cline}_{srr}.log'
+    shell:
+        r"""
+            {config[pyGenomeTracks]}/make_tracks_file --trackFiles {input.bedgraph} -o {output.ini}
+        """
+
+
+# plot using the ini file
+rule plot_with_pyGenomeTracks:
+    input:
+        ini = rules.make_pyGenomeTracks_ini.output.ini
+    output:
+        image = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.{chr}.pdf'
+    log:
+        'results/main/{cline}/logs/rule_plot_with_pyGenomeTracks_{cline}_{srr}_{chr}.log'
+    shell:
+        r"""
+            {config[pyGenomeTracks]}/pyGenomeTracks --tracks {input.ini} --region {wildcards.chr}:0-10000000 --outFileName {output.image}
+        """
+
+
+# plot using custom script
+rule plot_hicnv_bedpe:
+    input:
+        bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
+    output:
+        image = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.{chr}.png'
+    log:
+        'results/main/{cline}/logs/rule_plot_hicnv_bedpe_{cline}_{srr}_{chr}.log'
+    shell:
+        r"""
+            python workflow/scripts/plot_hicnv_bedgraph.py --bedgraph {input} --outfn {output}
         """
