@@ -1,6 +1,6 @@
-re	seq_pattern
-mboi	^GATC
-dpnii	^GATC
-bglii	A^GATCT
-hindiii	A^AGCTT
-arima	^GATC G^ANTC
+re	seq_pattern	hicnv_fragcutoff
+mboi	^GATC	150
+dpnii	^GATC	150
+bglii	A^GATCT	1000
+hindiii	A^AGCTT	1000
+arima	^GATC G^ANTC	150
