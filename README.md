@@ -184,7 +184,7 @@ For each cell line {cline} and its technical replicates {srr} you will have the 
   - {cline}.{srr}.chr{num}.param.txt
 
 - CNV_Estimation - similarly to the Kernel_Smoothing output, the CNV_Estimation output is done chromosome by chromosome and for a given chromosome a single file is generated, there are also two extra files which are summarizing the genome wide output:
-  - {cline}.{srr}.chr{num}.cnv.bedGraph - per chromosome contains the smoothened copy number calls
+  - {cline}.{srr}.chr{num}.cnv.bedGraph - per chromosome contains the final segmentation copy number calls
   - {cline}.{srr}.cnv.bedGraph - concatination of all chromosomes
   - {cline}.{srr}.cnv.txt
 
