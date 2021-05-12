@@ -115,6 +115,79 @@ Finally run the CNV analyis which uses scripts/hicnv_v2.R (Rule run_hicnv):
 snakemake --profile results/main/{cline}/hicnv/{cline}.{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph
 </pre>
 
+The `hicnv_v2.R` script comes from the original [HiCnv Github Repo](https://github.com/ay-lab/HiCnv) and this step/rule is the most important so below is a comprehensive description of its output tree structure:
+
+<pre>
+results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/
+├── {cline}.{srr}.copyNumber.txt
+├── gc_map_frag.bed
+├── coverage.bedGraph
+├── coverage.gc_map_frag.bedGraph
+│
+├── normalized_data
+│   └── {cline}.{srr}.F_GC_MAP.NormCount.0.2_0.5_150.bedGraph
+│
+├── Kernel_Smoothing
+│   ├── {cline}.{srr}.chr1.counts.txt
+│   ├── {cline}.{srr}.chr1.kde2d_x.txt
+│   ├── {cline}.{srr}.chr1.kde2d_y.txt
+│   ├── {cline}.{srr}.chr1.kde2d_z.txt
+│   ├── {cline}.{srr}.chr1.param.txt
+│   ├── {cline}.{srr}.chr2.counts.txt
+│   ├── {cline}.{srr}.chr2.kde2d_x.txt
+│   ├── {cline}.{srr}.chr2.kde2d_y.txt
+│   ├── {cline}.{srr}.chr2.kde2d_z.txt
+│   ├── {cline}.{srr}.chr2.param.txt
+│   ├── {cline}.{srr}.chr3.counts.txt
+│   ├── {cline}.{srr}.chr3.kde2d_x.txt
+│   ├── {cline}.{srr}.chr3.kde2d_y.txt
+│   ├── {cline}.{srr}.chr3.kde2d_z.txt
+│   ├── {cline}.{srr}.chr3.param.txt
+│   .   
+│   .   
+│   .   
+│   ├── {cline}.{srr}.chrX.counts.txt
+│   ├── {cline}.{srr}.chrX.kde2d_x.txt
+│   ├── {cline}.{srr}.chrX.kde2d_y.txt
+│   ├── {cline}.{srr}.chrX.kde2d_z.txt
+│   └── {cline}.{srr}.chrX.param.txt
+│
+└── CNV_Estimation
+    ├── {cline}.{srr}.chr1.cnv.bedGraph
+    ├── {cline}.{srr}.chr2.cnv.bedGraph
+    ├── {cline}.{srr}.chr3.cnv.bedGraph
+    .   
+    .   
+    .   
+    ├── {cline}.{srr}.chrX.cnv.bedGraph
+    ├── {cline}.{srr}.cnv.bedGraph
+    └── {cline}.{srr}.cnv.txt
+</pre>
+
+For each cell line {cline} and its technical replicates {srr} you will have the tree structure above
+
+- {cline}.{srr}.copyNumber.txt - contains copyNumber per chromosome
+
+- gc_map_frag.bed - contains GC and mappability information for each RE cutsite
+
+- coverage.bedGraph - contains the coverage for each  RE cutsite
+
+- coverage.gc_map_frag.bedGraph - contains the bedtools intersection between coverage.bedGraph and gc_map_frag.bed
+
+- normalized_data - contains a single normalized data file 
+
+- Kernel_Smoothing - after normalization CNV's are analyzed chromosome by chromosome. For a given chromosome 5 files are generated 
+  - {cline}.{srr}.chr{num}.counts.txt - contains loci smooth count information
+  - {cline}.{srr}.chr{num}.kde2d_x.txt
+  - {cline}.{srr}.chr{num}.kde2d_y.txt
+  - {cline}.{srr}.chr{num}.kde2d_z.txt
+  - {cline}.{srr}.chr{num}.param.txt
+
+- CNV_Estimation - similarly to the Kernel_Smoothing output, the CNV_Estimation output is done chromosome by chromosome and for a given chromosome a single file is generated, there are also two extra files which are summarizing the genome wide output:
+  - {cline}.{srr}.chr{num}.cnv.bedGraph - per chromosome contains the smoothened copy number calls
+  - {cline}.{srr}.cnv.bedGraph - concatination of all chromosomes
+  - {cline}.{srr}.cnv.txt
+
 ## Run the HiCnv workflow the _fast way_
 After installing all the necessary software, and setting up the configurations files you can simply run (Rule run_hicnv):
 <pre>
