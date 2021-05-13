@@ -22,3 +22,7 @@ results/refs/*
 !results/refs/hicpro/
 
 .new_samples/
+gmon.out
+check
+tmp/
+*.ipynb_checkpoints
