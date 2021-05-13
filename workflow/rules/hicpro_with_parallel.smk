@@ -115,7 +115,7 @@ rule hicpro_with_parallel: # localrule
         bowtie2_idxs = rules.bowtie2_index_ref_genome.output,
         config = ancient(re_config_file),
     output:
-        qsubs_written = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/qsubs.written')
+        qsubs_written = touch('results/main/{cline}/hicpro_with_parallel/qsubs.written'),
     params:
         datadir = 'results/main/{cline}/hicpro/renamed_fastqs_with_parallel/', # part of rule rename_before_hicpr
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
@@ -157,7 +157,7 @@ rule hicpro_with_parallel_started: # localrule
     input:
         qsubs_written = rules.hicpro_with_parallel.output.qsubs_written
     output:
-        qsubs_started = touch('results/main/{cline}/hicpro_with_parallel/bowtie_results/qsubs.started')
+        qsubs_started = touch('results/main/{cline}/hicpro_with_parallel/qsubs.started')
     params:
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
     shell:

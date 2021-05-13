@@ -36,7 +36,7 @@ rule process_refeature:
     output:
         sorted_feat_map = 'results/refs/restriction_enzymes/hg38_{re}_digestion.extended.fragment.gc.map.sorted.bed'
     resources:
-        mem_mb = 16000
+        mem_mb = 30000
     log:
         'results/refs/restriction_enzymes/logs/rule_process_refeature_{re}.log'
     shell:
@@ -170,15 +170,16 @@ def get_tech_rep_chrflt_perREfragStats(wildcards):
         input_fns.append(new_input)
     return(sorted(input_fns))
 
+
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule combine_tech_reps_perREfragStats:
     input:
         get_tech_rep_chrflt_perREfragStats
     params:
-        re_fs_list = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.REfragStats.list.txt'
+        re_fs_list = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.REfragStats.list.txt'
     output:
-        combined_frag_stats = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.perREfragStats'
+        combined_frag_stats = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats'
     resources:
         nodes = 1,
         ppn = 1,
@@ -209,20 +210,20 @@ def re_fgc_map_sorted_chrflt_file(wildcards):
 #rules.make_perREfragStats.output.frag_stats
 #rules.process_refeature.output.sorted_feat_map
 # combined_frag_stats = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.perREfragStats'
-rule run_hicnv:
+rule run_tech_hicnv:
     input:
         feat = re_fgc_map_sorted_chrflt_file,
         cov = rules.combine_tech_reps_perREfragStats.output.combined_frag_stats
     params:
-        parent_dir = 'results/main/{cline}/hicnv/run/',
+        parent_dir = 'results/main/{cline}/hicnv/tech_run/',
     output:
-        directory('results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv')
+        directory('results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv')
     log:
-        'results/main/{cline}/logs/rule_run_hicnv_{cline}_{srr}.log'
+        'results/main/{cline}/logs/rule_run_tech_hicnv_{cline}_{srr}.log'
     benchmark:
-        'results/main/{cline}/benchmarks/rule_run_hicnv_{cline}_{srr}.bmk'
+        'results/main/{cline}/benchmarks/rule_run_tech_hicnv_{cline}_{srr}.bmk'
     resources:
-        mem_mb = 25000,
+        mem_mb = 50000,
         ppn = 2
     shadow: 'full'
     shell:
@@ -250,6 +251,7 @@ rule run_hicnv:
 
 
 # make the ini file required for plotting
+# currently not put into use due to custom script
 rule make_pyGenomeTracks_ini:
     input:
         bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
@@ -264,6 +266,7 @@ rule make_pyGenomeTracks_ini:
 
 
 # plot using the ini file
+# currently not put into use due to custom script
 rule plot_with_pyGenomeTracks:
     input:
         ini = rules.make_pyGenomeTracks_ini.output.ini
@@ -278,14 +281,110 @@ rule plot_with_pyGenomeTracks:
 
 
 # plot using custom script
-rule plot_hicnv_bedpe:
+rule plot_tech_hicnv_bedpe:
     input:
-        bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
+        bedgraph = 'results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
     output:
-        image = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.{chr}.png'
+        image = 'results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.png'
     log:
-        'results/main/{cline}/logs/rule_plot_hicnv_bedpe_{cline}_{srr}_{chr}.log'
+        'results/main/{cline}/logs/rule_plot_tech_hicnv_bedpe_{cline}_{srr}.log'
+    params:
+        max_cn = 10
+    resources:
+        mem_mb = 8000
     shell:
         r"""
-            python workflow/scripts/plot_hicnv_bedgraph.py --bedgraph {input} --outfn {output}
+            python workflow/scripts/plot_hicnv_bedgraph.py \
+                        --bedgraph {input} \
+                        --outfn {output} \
+                        --max-cn {params.max_cn} >> {log} 2>&1
+        """
+
+
+# Helper function to obtain all perREfragStats for a technical replicate
+def get_bio_rep_chrflt_perREfragStats(wildcards):
+    input_fns = glob.glob('results/main/{cline}/hicnv/tech_combined/{cline}.*.perREfragStats'.format(**wildcards))
+    return(sorted(input_fns))
+
+
+# Create this file as per your restriction fragment.
+# Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
+rule combine_bio_reps_perREfragStats:
+    input:
+        get_bio_rep_chrflt_perREfragStats
+    params:
+        re_fs_list = 'results/main/{cline}/hicnv/bio_combined/{cline}.REfragStats.list.txt'
+    output:
+        combined_frag_stats = 'results/main/{cline}/hicnv/bio_combined/{cline}.perREfragStats'
+    resources:
+        nodes = 1,
+        ppn = 1,
+        mem_mb = 16000
+    log:
+        'results/main/{cline}/logs/rule_combine_bio_reps_perREfragStats_{cline}.log'
+    shell:
+        r"""
+            # separate the inputs by new line character
+            num_files=$(echo {input} | wc -w)
+            if [[ $num_files == 1 ]]; then
+                ln {input} {output}
+            else
+                for fn in {input};
+                do
+                    echo $fn >> {params.re_fs_list}
+                done
+
+                # run the combine script
+                perl workflow/scripts/combine_multiple_REfragStats.pl {params.re_fs_list} {output} >> {log} 2>&1
+            fi
+        """
+
+
+# Run HiCnv after merging biological replicates
+# I am also saving the output of HiCnv as a meta file
+# because HiCnv is calculating the reference chromosome
+rule run_bio_hicnv:
+    input:
+        feat = re_fgc_map_sorted_chrflt_file,
+        cov = rules.combine_bio_reps_perREfragStats.output.combined_frag_stats
+    params:
+        parent_dir = 'results/main/{cline}/hicnv/bio_run/',
+        meta = '{cline}.meta.txt'
+    output:
+        directory('results/main/{cline}/hicnv/bio_run/{cline}_hicnv')
+    log:
+        'results/main/{cline}/logs/rule_run_bio_hicnv_{cline}.log'
+    benchmark:
+        'results/main/{cline}/benchmarks/rule_run_bio_hicnv_{cline}.bmk'
+    resources:
+        mem_mb = 50000,
+        ppn = 2
+    shadow: 'full'
+    shell:
+        r"""
+            # extract the fragment cutoff from the config files
+            re=$(grep {wildcards.cline} config/samplesheet.tsv | cut -f 2)
+            fragcutoff=$(grep $re config/re_metadata.tsv | cut -f 3)
+            echo "Restriction enzyme: ${{re}}" >> {log} 2>&1
+            echo "Fragment cutoff: ${{fragcutoff}}" >> {log} 2>&1
+
+            # run hicnv
+            {config[R4]} workflow/scripts/hicnv_v2.R \
+                --refeature={input.feat} \
+                --coverage={input.cov} \
+                --prefix={wildcards.cline} \
+                --fragcutoff=$fragcutoff \
+                --cpu {resources.ppn} | tee {params.meta} >> {log} 2>&1 \
+                    || echo "Failed but saving output for debugging purposes." >> {log} 2>&1
+
+            # making the outdir since snakemake doesn't premake it like it does for the
+            # parent directory of an output file.
+            mkdir -p {params.parent_dir} >> {log} 2>&1
+
+            # moving the meta file into the hicnv results before the final move
+            mkdir -p {wildcards.cline}_hicnv/logs/
+            mv {params.meta} {wildcards.cline}_hicnv/logs/
+
+            # move the HiCnv results to the run folder
+            mv {wildcards.cline}_hicnv/ {output} >> {log} 2>&1
         """

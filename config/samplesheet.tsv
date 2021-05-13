@@ -13,5 +13,5 @@ T47D	hindiii	encode
 test_copy	hindiii	sra
 test_short	hindiii	sra
 tixon	hindiii	sra
-UCD52_CR	arima	custom
-UCD52_PR	arima	custom
+UCD52CR	arima	custom
+UCD52PR	arima	custom

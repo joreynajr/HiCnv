@@ -11,7 +11,7 @@ SAMPLESHEET = read_table('config/samplesheet.tsv', index_col=0)
 
 # Setting wildcard constraints
 wildcard_constraints:
-    srr = 'SRR[A-Za-z0-9]{7,8}',
+    srr = 'SRR[A-Za-z0-9]{7,8}|custom',
     lib = 'ENC[A-Za-z0-9]{8}'
 
 
@@ -147,9 +147,9 @@ rule download_paired_fastq_encode:
 include: "rules/hicpro.smk"
 include: "rules/hicpro_with_parallel.smk"
 include: "rules/hicnv.smk"
+include: "rules/hicnv_new_hicnv.smk"
 
 localrules: rename_before_hicpro
 localrules: rename_before_hicpro_with_parallel
 localrules: hicpro_with_parallel
 localrules: hicpro_with_parallel_started
-localrules: plot_hicnv_bedpe
