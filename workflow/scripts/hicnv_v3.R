@@ -11,18 +11,17 @@ library(parallel)
 library(EbayesThresh)
 
 option_list = list(
-
+  
   make_option("--refeature", type="character", help="A five column restriction enzyme cutsite bed file with GC content, mappability, fragment length infomation\n
   \t\t<chr>\t<start>\t<end>\t<GC frequency>\t<mappability>\t<fragment length>\n"),
-  make_option("--coverage", type="character", help="A bedGraph file with read coverage signal (5th column).\n
-  \t\tAlternatively, the .perREfragStats file\n"),
+  make_option("--coverage", type="character", help="A bedGraph/.perREfragStats file with read coverage signal (4th column).\n"),
   make_option("--gccutoff", type="numeric", default=0.2, help="GC content cutoff. Anything below <gccutoff> will be removed [Default is 0.2].\n"),
   make_option("--mapcutoff", type="numeric", default=0.5, help="Mappability cutoff. Anything below <mapcutoff> will be removed [Default is 0.5].\n"),
   make_option("--fragcutoff", type="integer", default=150, help="Fragment length cutoff. Anything below <fragcutoff> will be removed [Default is 150].\n
   \t\tFor Hi-C experiments with 4bp cut enzyme, this value is 150, for 6bp enzymes this value should be 1000.\n"),
   make_option("--refchrom", type="character", default=NA, help="Name of the reference chromosome for CNV detection.\n
   \t\tIf no name is provided then HiCnv proceed to estimate proportion of interaction count or PIC to decide a reference chromosome.\n"),
-  make_option("--bandwidth", type="integer", default=1e6, help="Genomic distance bandwidth with which Kernel smoothing will be performed [Default 1Mb].\n"),
+  make_option("--bandwidth", type="integer", default=1e6, help="Genomic distance bandwidth with which Kernel smoothing will be performed [Default 1Mb, set it 0 if unsure].\n"),
   make_option("--hmmstate", type="integer", default=10, help="Number of HMM states to be searched in each chromosome [Default 10].\n"),
   make_option("--threshold", type="numeric", default=0.20, help="Threshold value to define amplification and deletion with respect to normal region [Default is 0.2 i.e. deviation of 20% from mean normal value will be labeled as CNV].\n"),
   make_option("--prefix", type="character", help="All the files and folders will be created with this name.\n"),
@@ -43,7 +42,7 @@ hmm_state <- opt$hmmstate
 
 if (opt$cpu > 1) {
   cl <- makeCluster(opt$cpu)
-} else {
+} else { 
   cl <- NA
 }
 
@@ -82,16 +81,16 @@ bedtools <- Sys.which("bedtools")
 
 ## Map the coverage values over the refeature file ##
 CoverageMapping <- function(refeature, coverage, bedtools) {
-
+  
   sort_cmd <- paste0(bedtools," sort -i ",refeature," > gc_map_frag.bed")
   cat ("Running ",sort_cmd,"\n")
   system(sort_cmd, wait=T)
-
+ 
   sort_cmd <- paste0(bedtools," sort -i ",coverage," > coverage.bedGraph")
   cat ("Running ",sort_cmd,"\n")
   system(sort_cmd, wait=T) 
 
-  map_coverage <- paste0(bedtools," map -a gc_map_frag.bed -b coverage.bedGraph -c 5 -o sum -null 0 > coverage.gc_map_frag.bedGraph")
+  map_coverage <- paste0(bedtools," map -a gc_map_frag.bed -b coverage.bedGraph -c 4 -o sum -null 0 > coverage.gc_map_frag.bedGraph")
   cat ("Running ",map_coverage,"\n")
   system(map_coverage, wait=T)
 }
@@ -100,7 +99,7 @@ CoverageMapping <- function(refeature, coverage, bedtools) {
 ## 1D regression function implemneted here ##
 #ChromWiseRegresssion <- function(i, chrom, bdg, g, m, f) {
 ChromWiseRegresssion <- function(bdg, g, m, f, chrom) {
-
+  
   #cat ("Running 1D regression for ",chrom[i],"\n")
   #bdg_keep <- bdg[bdg$chr==chrom[i] & (bdg$gc >= g & bdg$map >= m & bdg$frag >= f),]
   #bdg_bad  <- bdg[bdg$chr==chrom[i] & (bdg$gc < g | bdg$map < m | bdg$frag < f),]
@@ -120,7 +119,7 @@ ChromWiseRegresssion <- function(bdg, g, m, f, chrom) {
   gcc_vec <- (gcc_vec-mean(c(gcc_vec)))/sd(c(gcc_vec))
   map_vec <- (map_vec-mean(c(map_vec)))/sd(c(map_vec))
 
-  fit   <- glm(count ~ len_vec+gcc_vec+map_vec, family="poisson")
+  fit   <- glm(count ~ len_vec+gcc_vec+map_vec,family="poisson")
   coeff <- round(fit$coeff,4)
   res   <- round(count/exp(coeff[1]+coeff[2]*len_vec+coeff[3]*gcc_vec+coeff[4]*map_vec), 2)*100
 
@@ -138,19 +137,19 @@ ChromWiseRegresssion <- function(bdg, g, m, f, chrom) {
 }
 
 OneDReg <- function(gc_limit, map_limit, frag_limit, prefix) {
-
+  
   if (!file.exists("normalized_data")) {
     dir.create("normalized_data")
   }
 
   cov_bdg <- as.data.frame(fread("coverage.gc_map_frag.bedGraph",h=F))
   colnames(cov_bdg) <- c("chr","start","end","gc","map","frag","count")
-
+   
   chr_list <- unique(as.character(cov_bdg$chr))
   #print (chr_list)
   #norm_data <- lapply(c(1:length(chr_list)), ChromWiseRegresssion, chr_list, cov_bdg, gc_limit, map_limit, frag_limit)
   #norm_data <- rbindlist(norm_data)
-  norm_data <- ChromWiseRegresssion(cov_bdg, gc_limit, map_limit, frag_limit, chr_list)
+  norm_data <- ChromWiseRegresssion(cov_bdg, gc_limit, map_limit, frag_limit, chr_list) 
   fwrite(norm_data, file=paste0("normalized_data/",prefix,".F_GC_MAP.NormCount.",gc_limit,"_",map_limit,"_",frag_limit,".bedGraph"),row.names=F,quote=F,sep="\t")
   cat ("Wrote ",paste0("normalized_data/",prefix,".F_GC_MAP.NormCount.",gc_limit,"_",map_limit,"_",frag_limit,".bedGraph file"),"\n")
 
@@ -225,8 +224,8 @@ PICEstimate <- function(gc_limit, map_limit, frag_limit, prefix, ref) {
   cat ("Estimating copy number information for each chromosomes\n")
   norm_bdg <- as.data.frame(fread(paste0("normalized_data/",prefix,".F_GC_MAP.NormCount.",gc_limit,"_",map_limit,"_",frag_limit,".bedGraph"),h=T))
   chr_list <- unique(as.character(norm_bdg$chr))
-
-  if (!is.na(ref)) {
+  
+  if (!is.na(ref)) { 
     l <- list()
     l[[1]] <- chr_list
     l[[2]] <- norm_bdg
@@ -243,8 +242,8 @@ PICEstimate <- function(gc_limit, map_limit, frag_limit, prefix, ref) {
     ref.chrom <- rep(ref,length(chr_list))
     copyEstimate <- CopyEstimate_func(l, gc_limit, map_limit, frag_limit, ref)
     copyEstimate[,"sample"] <- prefix
-
-    write.table(copyEstimate,file=paste0(prefix,".copyNumber.txt"),row.names=F,quote=F,sep="\t")
+    
+    write.table(copyEstimate,file=paste0(prefix,".copyNumber.txt"),row.names=F,quote=F,sep="\t") 
   }
   cat ("Wrote ",paste0(prefix,".copyNumber.txt")," file\n")
 }
@@ -252,11 +251,10 @@ PICEstimate <- function(gc_limit, map_limit, frag_limit, prefix, ref) {
 ## Kernal smoothing followed by HMM segmentation is performed ##
 Hmm_func <- function(n,chr_obj) {
 
-  h <- depmixS4::depmix(smooth_count~1, family=gaussian(), nstates=n, data=chr_obj)
-
+  h <- depmixS4::depmix(smooth_count~1,family=gaussian(),nstates=n,data=chr_obj)
   result <- tryCatch({
     f <- depmixS4::fit(h)
-    b <- BIC(f)
+    b <- BIC(f)      
     return(list(f,b))
   }, warning = function(e) {
     cat ("HMM did not converged for ",n,"\n")
@@ -269,14 +267,14 @@ Hmm_func <- function(n,chr_obj) {
   })
 }
 
-Min_bic <- function(hmm_obj, nstates, chr_obj) {
+Min_bic <- function(hmm_obj,nstates,chr_obj) {
 
-  d <- list(bic=c(), nstate=c())
+  d <- list(bic=c(),nstate=c())
   i <- 1
   while (i < nstates) {
     result <- tryCatch({
       d$bic[[i]] <- hmm_obj[[i]][[2]]
-      d$nstate[[i]] <- i
+      d$nstate[[i]] <- i 
     }, warning = function(e) {
       cat ("No hmm segments for nstate ",i,"\n")
     }, error = function(e) {
@@ -284,24 +282,13 @@ Min_bic <- function(hmm_obj, nstates, chr_obj) {
     })
     i <- i + 1
   }
-
-  cat(paste("\t\t", d$bic, d$nstate, "\n"))
-
   d <- na.omit(as.data.frame(do.call(cbind,d)))
-
-  #cat(paste0("This is d: ", d, "\n"))
-  #cat(paste0("This is d$bic: ", d$bic, "\n"))
-  #cat(paste0("This is which.min(d$bic): ", which.min(d$bic), "\n"))
-  #cat(paste0("This is d[which.min(d$bic),]: ", d[which.min(d$bic),], "\n"))
-  #cat(paste0("This is d[which.min(d$bic),]$nstate: ", d[which.min(d$bic),]$nstate, "\n"))
-
-  bic_vals = as.numeric(as.character(d$bic))
-  bic_vals[which(is.na(bic_vals))] = Inf
-
-  cat(paste0("This is bic_vals: ", bic_vals, "\n"))
-
-  best_state = as.integer(d[which.min(bic_vals),]$nstate)
-  chr_obj[,"state"] <- hmm_obj[[best_state]][[1]]@posterior$state
+  if (nrow(d) > 0) {
+    chr_obj[,"state"] <- hmm_obj[[d[which.min(d$bic),]$nstate]][[1]]@posterior$state
+  } else {
+    chr_obj[,"state"] <- 1
+    cat ("No segments found\n")
+  }
   return(chr_obj)
 }
 
@@ -335,35 +322,27 @@ GetRegionWiseMean <- function(j, seg, bdg) {
 }
 
 ChromWise_KDE_HMM_Seg <- function(i, chr, bdg, tpm, g, m, f, pfx, ref, hmm_state, win=1e6, seg="yes", y_grid=1.0) {
-
-  cat ("Running KDE and HMM segmentation for ", as.vector(chr[i]),"\n")
+ 
+  cat ("Running KDE and HMM segmentation for ",as.vector(chr[i]),"\n")
   bdg_chr <- bdg[bdg$chr == chr[i],]
   bdg_chr$norm.count <- bdg_chr$norm.count * tpm[tpm$chr==chr[i],]$gain
-
   if (seg == "yes") {
-
     segment <- suppressWarnings(changepoint::cpt.mean(bdg_chr$norm.count, method="PELT", minseglen=10))
     segment <- CptsInBedFormat(segment)
-
     bdg_chr[,"start.index"] <- 1:nrow(bdg_chr)
     bdg_chr[,"end.index"]   <- (1:nrow(bdg_chr)) + 1
-
     segment[,"chr"]   <- chr[i]
     segment[,"start"] <- bdg_chr[bdg_chr$start.index %in% segment$start.index,]$start
     segment[,"end"]   <- bdg_chr[bdg_chr$end.index %in% segment$end.index,]$end
-
     #feature_mean <- parLapply(cl,c(1:nrow(segment)), GetRegionWiseMean, segment, bdg_chr)
     #feature_mean <- as.data.frame(rbindlist(feature_mean))
-
     #segment <- data.frame(segment, feature_mean)
     segment[,"frag"]  <- segment$end - segment$start
     #segment <- segment[,c("chr","start.index","end.index","norm.count","start","end","gc","map","frag","count")]
     segment <- segment[,c("chr","start.index","end.index","norm.count","start","end","frag")]
     segment$start.index <- 1:nrow(segment)
     segment$end.index   <- segment$start.index + 1
-
     bdg_chr <- segment
-
   } else {
     bdg_chr[,"start.index"] <- 1:nrow(bdg_chr)
     bdg_chr[,"end.index"]   <- (1:nrow(bdg_chr)) + 1
@@ -372,33 +351,38 @@ ChromWise_KDE_HMM_Seg <- function(i, chr, bdg, tpm, g, m, f, pfx, ref, hmm_state
 
   ## Calculate bandwidth and gridsize here
   frag_mean <- mean(bdg_chr$frag)
-  bw <- win/frag_mean
+  if (win > 0) {
+    bw <- win/frag_mean
+  } else if (win == 0) {
+    bw <- KernSmooth::dpik(bdg_chr$start)/frag_mean
+  }
 
-  ## Change the y_grid parameter to reduce the grid size and thus reduce time for smoothing
+  ## Change the y_grid parameter to reduce the grid size and thus reduces time for smoothing
   cat ("Performing Kernel smoothing on ",as.vector(chr[i]),"\n")
   gridsize <- c(nrow(bdg_chr),round(max(bdg_chr$norm.count) * y_grid))
-  bandwidth <- c(bw, 2)
+  #bandwidth <- c(bw, 2)
+  bandwidth <- c(bw, KernSmooth::dpik(bdg_chr$norm.count))
   x.dir <- c(min(bdg_chr$start.index),max(bdg_chr$start.index))
   y.dir <- c(min(bdg_chr$norm.count),max(bdg_chr$norm.count))
 
-  ## Kernel smoothing
-  l <- KernSmooth::bkde2D(bdg_chr[,c(2,4)], gridsize=gridsize, bandwidth=bandwidth, range.x = list(x.dir, y.dir), truncate=TRUE)
+  ## Kernel smoothing 
+  l <- KernSmooth::bkde2D(bdg_chr[,c(2,4)], gridsize=gridsize, bandwidth=bandwidth, range.x = list(x.dir,y.dir), truncate=TRUE)
   pos.max <- apply(l$fhat, 1, which.max)
-  y <- l$x2[pos.max]
+  y <- l$x2[pos.max]  
 
-  ## Correct the edge effect
+  ## Correct the edge effect 
   smc.left  <- caTools::runmean(y,k=round(bw),endrule="keep",align="left")
   smc.right <- caTools::runmean(y,k=round(bw),endrule="keep",align="right")
   bdg_chr[,"smooth_count"] <- round((smc.left + smc.right)/2,3)
 
-  ## Segment with HMM
-  cat ("Performing HMM segmenatation on ", as.vector(chr[i]),"\n")
+  ## Segment with HMM 
+  cat ("Performing HMM segmenatation on ",as.vector(chr[i]),"\n")
   if (!is.na(cl)) {
     chr_hmm <- parLapply(cl, c(2:hmm_state), Hmm_func, bdg_chr)
   } else {
     chr_hmm <- lapply(c(2:hmm_state), Hmm_func, bdg_chr)
   }
-  bdg_chr <- Min_bic(chr_hmm, hmm_state, bdg_chr)
+  bdg_chr <- Min_bic(chr_hmm, hmm_state, bdg_chr) 
   hmm_param <- aggregate(smooth_count ~ state, mean, data=bdg_chr)
   hmm_param[,"sd"] <- aggregate(smooth_count ~ state, sd, data=bdg_chr)$smooth_count 
 
@@ -418,14 +402,9 @@ KDE_HMM_Segmentation <- function(gc_limit, map_limit, frag_limit, prefix, ref, g
   if (!file.exists(paste0("Kernel_Smoothing"))) {
     dir.create(paste0("Kernel_Smoothing"))
   }
-  norm_fn = paste0("normalized_data/",prefix,".F_GC_MAP.NormCount.",gc_limit,"_",map_limit,"_",frag_limit,".bedGraph")
-  norm_bdg   <- as.data.frame(fread(norm_fn, h=T))
-
-  sample_fn = paste0(prefix,".copyNumber.txt",sep="")
-  sample_tpm <- read.table(sample_fn, h=T)
-
+  norm_bdg   <- as.data.frame(fread(paste0("normalized_data/",prefix,".F_GC_MAP.NormCount.",gc_limit,"_",map_limit,"_",frag_limit,".bedGraph"),h=T))
+  sample_tpm <- read.table(paste0(prefix,".copyNumber.txt",sep=""),h=T)
   chr_list   <- unique(as.character(norm_bdg$chr))
-
   lapply(c(1:length(chr_list)), ChromWise_KDE_HMM_Seg, chr_list, norm_bdg, sample_tpm, gc_limit, map_limit, frag_limit, prefix, ref, hmm_state, genome_width)
 }
 
@@ -466,7 +445,7 @@ CNV_LABEL <- function(prefix, cnv_threshold) {
   cnv <- rbindlist(cnv)
   write.table(cnv, file=paste0("CNV_Estimation/",prefix,".cnv.txt"), row.names=F, sep="\t", quote=F)
   write.table(cnv[,c("chr","start","end","smooth_count","cnv","cnv_label")], file=paste0("CNV_Estimation/",prefix,".cnv.bedGraph"), row.names=F, col.names=F, sep="\t", quote=F)
-
+  
   bedtools <- Sys.which("bedtools")
   if (nchar(bedtools) > 0) {
     cat ("bedtools found! Grouping the cnv.bedGGraph file based on cnv label\n")
