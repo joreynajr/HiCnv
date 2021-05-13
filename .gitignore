@@ -26,3 +26,4 @@ gmon.out
 check
 tmp/
 *.ipynb_checkpoints
+summary/
