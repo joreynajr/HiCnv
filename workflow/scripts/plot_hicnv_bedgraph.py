@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import argparse
-import seaborn as sns
 import pytls
 
 # ################# Parsing the command line arguments ##################
@@ -15,14 +14,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--bedgraph', type=str)
 parser.add_argument('--outfn', type=str)
 parser.add_argument('--coord-type', default='bin', choices=['bin', 'genomic'])
-parser.add_argument('--max-cn', default=6)
-#params = parser.parse_args()
+parser.add_argument('--max-cn', type=int, default=6)
+params = parser.parse_args()
 
-params = parser.parse_known_args()[0]
-
-params.bedgraph = '../../results/main/22Rv1/hicnv/run/22Rv1_SRR7760384_hicnv/CNV_Estimation/22Rv1.SRR7760384.cnv.bedGraph'
-params.outfn = 'comprehensive_cnv_bedgraph.png'
-params.coord_type = 'genomic'
+# params.bedgraph = '../../results/main/22Rv1/hicnv/run/22Rv1_SRR7760384_hicnv/CNV_Estimation/22Rv1.SRR7760384.cnv.bedGraph'
+# params.outfn = 'comprehensive_cnv_bedgraph.png'
+# params.coord_type = 'genomic'
+# params = parser.parse_known_args()[0]
 
 # ################# Loading and parsing the data ##################
 print('Loading and parsing the data')
@@ -30,6 +28,11 @@ hicnv = pd.read_table(params.bedgraph, header=None)
 hicnv.columns = ['chr', 'start', 'end', 'counts', 'cn', 'cn_cat']
 hicnv.loc[:, 'chr'] = ['chr{}'.format(x) for x in
                        hicnv['chr'].apply(pytls.chrName_to_chrNum)]
+
+# if there is a . replace with a -1 (easily spot the missing data when negative)
+if '.' in df.loc[:, 0].values:
+    hicnv.loc[:, 'cn'] = hicnv.loc[:, 'cn'].replace('.', '-1')
+    hicnv.loc[:, 'cn'] = hicnv.loc[:, 'cn'].astype(int)
 
 # group the regionss by their chromosome
 hicnv_grps = hicnv.groupby('chr')
@@ -46,7 +49,7 @@ axes = np.ravel(axes)
 
 # plotting each chromosome onto it's own axis
 for chrom_num, chrom in chr_dict:
-    
+
     print('Plotting: chr', chrom_num)
 
     # get the ax
@@ -54,20 +57,20 @@ for chrom_num, chrom in chr_dict:
 
     # extract the data for the current chrom
     hicnv_grp_df = hicnv_grps.get_group(chrom)
-    
+
     # extract the x and corresponding y points
     x_vals = []
     y_vals = []
     for (start, end, cn) in hicnv_grp_df[['start', 'end', 'cn']].values:
 
-        # add the start 
+        # add the start
         x_vals.append(start)
         y_vals.append(cn)
 
         # add the end
         x_vals.append(end)
         y_vals.append(cn)
-    
+
     # plot a line plot
     ax.plot(x_vals, y_vals, color='blue')
 
@@ -80,18 +83,18 @@ for chrom_num, chrom in chr_dict:
         ax.set_ylabel('CN')
 
     # set the ytick labels
-    ax.set_ylim(-0.2, max_cn)
+    ax.set_ylim(-2, params.max_cn)
     ax.yaxis.set_ticks(range(0, params.max_cn, 2))
     ax.yaxis.set_ticks(range(1, params.max_cn, 2), minor=True)
-    
+
     # set a grid on the y-axis for easier visualization
     ax.grid(which='both', axis='y')
 
     # set the xticks at every 10th quartile
-    #chrom_len = int(hicnv_grp_df['end'].max()) * 2
-    #interval = int(chrom_len / 10)
-    #r = range(0, chrom_len + 1, interval)
-    #ax.set_xticks(r, minor=False)
+    # chrom_len = int(hicnv_grp_df['end'].max()) * 2
+    # interval = int(chrom_len / 10)
+    # r = range(0, chrom_len + 1, interval)
+    # ax.set_xticks(r, minor=False)
 
 axes[23].set_visible(False)
 fn = os.path.join(params.outfn)
