@@ -37,7 +37,7 @@ rule run_bio_hicnv_auto_bandwidth:
 
             # remove the fourth column but keep all others in order fit the new
             # hicnv format
-            cut -f 2 --complement {input.cov} > {params.new_cov_format}
+            cut -f 4 --complement {input.cov} > {params.new_cov_format}
 
             # run hicnv
             {config[R4]} workflow/scripts/hicnv_v3.R \
