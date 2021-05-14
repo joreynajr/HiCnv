@@ -9,7 +9,7 @@ import pytls
 parser = argparse.ArgumentParser()
 parser.add_argument('--bedgraphs', type=str, nargs="+")
 parser.add_argument('--outfn', type=str)
-parser.add_argument('--max-cn', default=6)
+parser.add_argument('--max-cn', type=int, default=11)
 params = parser.parse_args()
 
 # Test params
@@ -79,7 +79,7 @@ for i, tech_rep_fn in enumerate(params.bedgraphs):
             ax.set_ylabel('CN')
 
         # set the ytick labels
-        ax.set_ylim(-0.2, params.max_cn)
+        ax.set_ylim(-2, params.max_cn)
         ax.yaxis.set_ticks(range(0, params.max_cn, 2))
         ax.yaxis.set_ticks(range(1, params.max_cn, 2), minor=True)
 
