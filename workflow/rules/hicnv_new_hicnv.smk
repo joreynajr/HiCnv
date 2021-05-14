@@ -19,14 +19,6 @@ rule run_bio_hicnv_auto_bandwidth:
         mem_mb = 50000,
         ppn = 2
     shadow: 'full'
-    message:
-        """
-            This rule has been updated to handle the new file format for the coverage file.
-            The fourth column has been dropped and everything has been shifted to the left
-            therefore the new fourth column contains the coverage information.
-            old: {input.cov}
-            new: {params.new_cov_format}
-        """
     shell:
         r"""
             # extract the fragment cutoff from the config files
@@ -35,14 +27,10 @@ rule run_bio_hicnv_auto_bandwidth:
             echo "Restriction enzyme: ${{re}}" >> {log} 2>&1
             echo "Fragment cutoff: ${{fragcutoff}}" >> {log} 2>&1
 
-            # remove the fourth column but keep all others in order fit the new
-            # hicnv format
-            cut -f 4 --complement {input.cov} > {params.new_cov_format}
-
             # run hicnv
             {config[R4]} workflow/scripts/hicnv_v3.R \
                 --refeature={input.feat} \
-                --coverage={params.new_cov_format} \
+                --coverage={input.cov} \
                 --prefix={wildcards.cline} \
                 --fragcutoff=$fragcutoff \
                 --bandwidth=0 \
