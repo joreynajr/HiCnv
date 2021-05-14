@@ -73,7 +73,7 @@ for i, tech_rep_fn in enumerate(params.bedgraphs):
         # set the axis labels
         ax.set_title('{}'.format(chrom))
         if chrom_num > 19:
-            ax.set_xlabel('Genomic Coordinate')
+            ax.set_xlabel('Genomic\nCoordinate', labelpad=20)
 
         if chrom_num % 4 == 1:
             ax.set_ylabel('CN')

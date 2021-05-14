@@ -6,20 +6,15 @@ import argparse
 import pytls
 
 # ################# Parsing the command line arguments ##################
-# Current coord-type is only handling genomic data since the resolution we
-# are using is fragment based and dynamic.
-# I am thinking of implementing a bin based approach where you just use the
-# index associated with a fragment but that is currently not implemented.
 parser = argparse.ArgumentParser()
 parser.add_argument('--bedgraph', type=str)
 parser.add_argument('--outfn', type=str)
-parser.add_argument('--coord-type', default='bin', choices=['bin', 'genomic'])
-parser.add_argument('--max-cn', type=int, default=6)
+parser.add_argument('--max-cn', type=int, default=11)
 params = parser.parse_args()
 
+# Tesster params
 # params.bedgraph = '../../results/main/22Rv1/hicnv/run/22Rv1_SRR7760384_hicnv/CNV_Estimation/22Rv1.SRR7760384.cnv.bedGraph'
 # params.outfn = 'comprehensive_cnv_bedgraph.png'
-# params.coord_type = 'genomic'
 # params = parser.parse_known_args()[0]
 
 # ################# Loading and parsing the data ##################
@@ -30,7 +25,7 @@ hicnv.loc[:, 'chr'] = ['chr{}'.format(x) for x in
                        hicnv['chr'].apply(pytls.chrName_to_chrNum)]
 
 # if there is a . replace with a -1 (easily spot the missing data when negative)
-if '.' in df.loc[:, 0].values:
+if '.' in hicnv.loc[:, 'cn'].values:
     hicnv.loc[:, 'cn'] = hicnv.loc[:, 'cn'].replace('.', '-1')
     hicnv.loc[:, 'cn'] = hicnv.loc[:, 'cn'].astype(int)
 
@@ -76,8 +71,8 @@ for chrom_num, chrom in chr_dict:
 
     # set the axis labels
     ax.set_title('{}'.format(chrom))
-    if chrom_num > 20:
-        ax.set_xlabel('Bin')
+    if chrom_num > 19:
+        ax.set_xlabel('Genomic\nCoordinate', labelpad=20)
 
     if chrom_num % 4 == 1:
         ax.set_ylabel('CN')
