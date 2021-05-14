@@ -269,12 +269,14 @@ Hmm_func <- function(n,chr_obj) {
 
 Min_bic <- function(hmm_obj,nstates,chr_obj) {
 
-  d <- list(bic=c(),nstate=c())
+  #d <- data.frame(bic=c(),nstate=c())
+  bic <- c()
+  nstate <- c()
   i <- 1
   while (i < nstates) {
     result <- tryCatch({
-      d$bic[[i]] <- hmm_obj[[i]][[2]]
-      d$nstate[[i]] <- i 
+      bic[i] <- hmm_obj[[i]][[2]]
+      nstate[i] <- i 
     }, warning = function(e) {
       cat ("No hmm segments for nstate ",i,"\n")
     }, error = function(e) {
@@ -282,9 +284,13 @@ Min_bic <- function(hmm_obj,nstates,chr_obj) {
     })
     i <- i + 1
   }
-  d <- na.omit(as.data.frame(do.call(cbind,d)))
-  if (nrow(d) > 0) {
-    chr_obj[,"state"] <- hmm_obj[[d[which.min(d$bic),]$nstate]][[1]]@posterior$state
+  #d <- na.omit(as.data.frame(do.call(cbind,d)))
+  print (bic)
+  print (nstate)
+  #print(hmm_obj[[9]])
+  if (length(bic) > 0) {
+    #chr_obj[,"state"] <- hmm_obj[[d[which.min(d$bic),]$nstate]][[1]]@posterior$state
+    chr_obj[,"state"] <- hmm_obj[[nstate[which.min(bic)]]][[1]]@posterior$state
   } else {
     chr_obj[,"state"] <- 1
     cat ("No segments found\n")
