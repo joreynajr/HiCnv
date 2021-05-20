@@ -17,7 +17,7 @@ rule run_bio_hicnv_auto_bandwidth:
         'results/main/{cline}/benchmarks/rule_run_bio_hicnv_auto_bandwidth_{cline}.bmk'
     resources:
         mem_mb = 50000,
-        ppn = 2
+        ppn = 1
     shadow: 'full'
     shell:
         r"""
@@ -69,7 +69,7 @@ rule run_tech_hicnv_auto_bandwidth:
         'results/main/{cline}/benchmarks/rule_run_tech_hicnv_auto_bandwidth_{cline}_{srr}.bmk'
     resources:
         mem_mb = 50000,
-        ppn = 2
+        ppn = 1
     shadow: 'full'
     shell:
         r"""
@@ -133,10 +133,6 @@ use rule plot_tech_hicnv_bedpe as plot_bio_hicnv_with_bw_bedpe with:
         'results/main/{cline}/logs/rule_plot_bio_hicnv_auto_bandwidth_bedpe_{cline}.log'
 
 
-
-
-
-
 # Helper function to obtain all perREfragStats for a technical replicate
 def get_tech_rep_auto_bw_cnv_est(wildcards):
     fn = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.chr*.cnv.bedGraph'
@@ -164,3 +160,60 @@ use rule plot_tech_hicnv_bedpe as plot_tech_hicnv_with_bw_bedpe with:
         image = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/figures/{cline}.{srr}.png'
     log:
         'results/main/{cline}/logs/rule_plot_tech_hicnv_auto_bandwidth_bedpe_{cline}_{srr}.log'
+
+
+# Helper function to obtain all perREfragStats for a technical replicate
+def get_all_tech_rep_auto_bw_cnv_est(wildcards):
+    fn = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_*_hicnv/figures/{cline}.*.bedGraph'
+    input_fns = glob.glob(fn.format(**wildcards))
+    return(sorted(input_fns))
+
+# plot all tech reps on a single plot for auto bandwidth using custom script
+# output will be saved within the merged hicnv output
+rule plot_all_tech_hicnv_bedpe:
+    input:
+        bedgraphs = get_all_tech_rep_auto_bw_cnv_est
+    output:
+        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.all_tech_reps.png'
+    log:
+        'results/main/{cline}/logs/rule_plot_all_tech_hicnv_bedpe_{cline}.log'
+    params:
+        max_cn = 11
+    resources:
+        mem_mb = 8000
+    shell:
+        r"""
+            python workflow/scripts/plot_hicnv_bedgraphs_for_tech_reps.py \
+                        --bedgraphs {input} \
+                        --outfn {output} \
+                        --max-cn {params.max_cn} >> {log} 2>&1
+        """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
