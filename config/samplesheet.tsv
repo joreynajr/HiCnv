@@ -1,17 +1,18 @@
-cline	re	source
-22Rv1	mboi	sra
-HeLa_MboI_G1_Snyc	mboi	sra
-HeLa_Kyoto_MboI_G1_Snyc_STAG1_Depleted	mboi	sra
-HeLa_Kyoto_MboI_G1_Snyc_STAG2_Depleted	mboi	sra
-Nalm6	mboi	sra
-A549	hindiii	sra
-HepG2	hindiii	sra
-HL60S4_14_Pore	mboi	sra
-HL60S4_5_Pore	mboi	sra
-HL60S4	mboi	sra
-T47D	hindiii	encode
-test_copy	hindiii	sra
-test_short	hindiii	sra
-tixon	hindiii	sra
-UCD52CR	arima	custom
-UCD52PR	arima	custom
+cline	re	source	data_type
+22Rv1	mboi	sra	fastq
+HeLa_MboI_G1_Snyc	mboi	sra	fastq
+HeLa_Kyoto_MboI_G1_Snyc_STAG1_Depleted	mboi	sra	fastq
+HeLa_Kyoto_MboI_G1_Snyc_STAG2_Depleted	mboi	sra	fastq
+Nalm6	mboi	sra	fastq
+A549	hindiii	sra	fastq
+HepG2	hindiii	sra	fastq
+HL60S4_14_Pore	mboi	sra	fastq
+HL60S4_5_Pore	mboi	sra	fastq
+HL60S4	mboi	sra	fastq
+T47D	hindiii	encode	fastq
+test_copy	hindiii	sra	fastq
+test_short	hindiii	sra	fastq
+tixon	hindiii	sra	fastq
+UCD52CR	arima	custom	perREfragStats
+UCD52PR	arima	custom	perREfragStats
+LNCaP	hindiii	4dn	validpairs
