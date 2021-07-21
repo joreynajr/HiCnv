@@ -1,6 +1,4 @@
-#####################################################################
-############## Methods developed NOT using auto bandwidth ###########
-#####################################################################
+########## Process the reference files needed for HiCNV ##########
 
 # Download the mappability file for hg38 and do processing for HiCnv
 rule download_hg38_mappability:
@@ -84,34 +82,11 @@ rule filter_refeature_for_main_chrs:
                 -o {output} >> {log} 2>&1
         """
 
-
-# get the restriction enzyme digestion files
-def re_fgc_map_file(wildcards):
-    re = SAMPLESHEET.loc[wildcards.cline, 're']
-    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.bed'.format(re)
-    return(config)
-
+########## Process the sample data for HiCNV ##########
 
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
 rule make_perREfragStats:
-    input:
-        fwd_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R1_hg38.bwt2merged.bam',
-        rev_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R2_hg38.bwt2merged.bam',
-        frag = re_digestion_file,
-        fgc_map = re_fgc_map_file
-    output:
-        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.perREfragStats'
-    params:
-        merged_singletons = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.bwt2pairs.withSingles.mapq30.bam',
-        outdir = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}_allMap2FragmentsOutput',
-        prefix = '{cline}_allMap2FragmentsOutput'
-    resources:
-        nodes = 1,
-        ppn = 1,
-        mem_mb = 50000
-    log:
-        'results/main/{cline}/logs/rule_make_perREfragStats_{cline}_{srr}_{split}.log'
     shell:
         r"""
               # Merge singletons
@@ -144,18 +119,40 @@ rule make_perREfragStats:
           """
 
 
+# Helper function to make_perREfragStats 
+# get the restriction enzyme digestion files
+def re_fgc_map_file(wildcards):
+    re = SAMPLESHEET.loc[wildcards.cline, 're']
+    config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.bed'.format(re)
+    return(config)
+
+# Create this file as per your restriction fragment.
+# Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
+use rule make_perREfragStats as make_perREfragStats_for_hicpro_splits with:
+    input:
+        fwd_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R1_hg38.bwt2merged.bam',
+        rev_alns = 'results/main/{cline}/hicpro_with_parallel/bowtie_results/bwt2/{srr}/{split}_{srr}_R2_hg38.bwt2merged.bam',
+        frag = re_digestion_file,
+        fgc_map = re_fgc_map_file
+    output:
+        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.perREfragStats'
+    params:
+        merged_singletons = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.bwt2pairs.withSingles.mapq30.bam',
+        outdir = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}_allMap2FragmentsOutput',
+        prefix = '{cline}_allMap2FragmentsOutput'
+    resources:
+        nodes = 1,
+        ppn = 1,
+        mem_mb = 50000
+    log:
+        'results/main/{cline}/logs/rule_make_perREfragStats_for_hicpro_splits_{cline}_{srr}_{split}.log'
+
+
 # Filtering for chromosomes 1-22 + X.
 # The main hicnv_v2.R script will not work because there are too
 # few datapoints generated for chrM and chrY should also be excluded.
 rule filter_perREfragStats_for_main_chrs:
-    input:
-        frag_stats = rules.make_perREfragStats.output.frag_stats,
-        chr_list = 'resources/chromosome_lists/main_chrs.txt'
-    output:
-        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.chrflt.perREfragStats'
-    log:
-        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}_{srr}_{split}.log'
-    shell:
+   shell:
         r"""
             python workflow/scripts/filter_chrs_from_bed.py \
                 --bed-like {input.frag_stats} \
@@ -164,7 +161,21 @@ rule filter_perREfragStats_for_main_chrs:
         """
 
 
-# Helper function to obtain all perREfragStats for a technical replicate
+# Filtering for chromosomes 1-22 + X.
+# The main hicnv_v2.R script will not work because there are too
+# few datapoints generated for chrM and chrY should also be excluded.
+use rule filter_perREfragStats_for_main_chrs as filter_perREfragStats_for_main_chrs_for_hicpro_splits with:
+    input:
+        frag_stats = rules.make_perREfragStats_for_hicpro_splits.output.frag_stats,
+        chr_list = 'resources/chromosome_lists/main_chrs.txt'
+    output:
+        frag_stats = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.chrflt.perREfragStats'
+    log:
+        'results/main/{cline}/logs/rule_filter_perREfragStats_for_main_chrs_{cline}_{srr}_{split}.log'
+
+
+# Helper function for rule combine_tech_reps_perREfragStats
+# Obtain all perREfragStats for a technical replicate
 def get_tech_rep_chrflt_perREfragStats(wildcards):
     input_fns = []
 
@@ -173,7 +184,6 @@ def get_tech_rep_chrflt_perREfragStats(wildcards):
         new_input = 'results/main/{cline}/hicnv/split_re_frag_stats/{cline}.{srr}.{split}.chrflt.perREfragStats'.format(split=split, **wildcards)
         input_fns.append(new_input)
     return(sorted(input_fns))
-
 
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
@@ -202,18 +212,23 @@ rule combine_tech_reps_perREfragStats:
             perl workflow/scripts/combine_multiple_REfragStats.pl {params.re_fs_list} {output} >> {log} 2>&1
         """
 
+#####################################################################
+############## Methods developed NOT using auto bandwidth ###########
+#####################################################################
 
-# get the restriction enzyme digestion files
+########## Run HiCNV for each technical replicate using no auto-bandwidth ##########
+
+# Helper function for several rules
+# Initially established for run_tech_hicnv
+# Gets the corresponding restriction enzyme digestion files
 def re_fgc_map_sorted_chrflt_file(wildcards):
     re = SAMPLESHEET.loc[wildcards.cline, 're']
     config = 'results/refs/restriction_enzymes/hg38_{}_digestion.extended.fragment.gc.map.sorted.chrflt.bed'.format(re)
     return(config)
 
 
-# Run HiCnv a chromosome at a time
-#rules.make_perREfragStats.output.frag_stats
-#rules.process_refeature.output.sorted_feat_map
-# combined_frag_stats = 'results/main/{cline}/hicnv/combined/{cline}.{srr}.perREfragStats'
+# Run HiCnv a technical repilicate at a time
+# input.cov must remain a string and not a variable
 rule run_tech_hicnv:
     input:
         feat = re_fgc_map_sorted_chrflt_file,
@@ -254,47 +269,18 @@ rule run_tech_hicnv:
         """
 
 
-# make the ini file required for plotting
-# currently not put into use due to custom script
-rule make_pyGenomeTracks_ini:
-    input:
-        bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
-    output:
-        ini = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.ini'
-    log:
-        'results/main/{cline}/logs/rule_make_pyGenomeTracks_{cline}_{srr}.log'
-    shell:
-        r"""
-            {config[pyGenomeTracks]}/make_tracks_file --trackFiles {input.bedgraph} -o {output.ini}
-        """
 
-
-# plot using the ini file
-# currently not put into use due to custom script
-rule plot_with_pyGenomeTracks:
-    input:
-        ini = rules.make_pyGenomeTracks_ini.output.ini
-    output:
-        image = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.{chr}.pdf'
-    log:
-        'results/main/{cline}/logs/rule_plot_with_pyGenomeTracks_{cline}_{srr}_{chr}.log'
-    shell:
-        r"""
-            {config[pyGenomeTracks]}/pyGenomeTracks --tracks {input.ini} --region {wildcards.chr}:0-10000000 --outFileName {output.image}
-        """
-
-
-
-
-
-
-
-# plot using custom script
-rule plot_tech_hicnv_bedpe:
+# Plot the intermediate copy number values
+# Post-description: this script was made with the intention of plotting
+# the *.cnv.bedGraph file to generate a plot of CNV segmentations however
+# *.cnv.bedGraph contains intermediate CNV data, more precisely, it contains
+# kernel smoothened cnv data that still requires segmentation. Interesting
+# to investigate but raw coverage seems like the better debugging dataset.
+rule plot_tech_rep_intermediate_cnv_values:
     input:
         bedgraph = 'results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
     output:
-        image = 'results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.coverage.png'
+        image = 'results/main/{cline}/hicnv/tech_run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.intermediate_cnv.png'
     log:
         'results/main/{cline}/logs/rule_plot_tech_hicnv_bedpe_{cline}_{srr}.log'
     params:
@@ -303,24 +289,23 @@ rule plot_tech_hicnv_bedpe:
         mem_mb = 8000
     shell:
         r"""
+            bedtools sort -i {input} > {input}.sorted
             python workflow/scripts/plot_hicnv_bedgraph.py \
-                        --bedgraph {input} \
+                        --bedgraph {input}.sorted \
                         --outfn {output} \
-                        --max-cn {params.max_cn} >> {log} 2>&1
+                        --data-type cn \
+                        --data-column 5 \
+                        --max-y {params.max_cn} >> {log} 2>&1
         """
 
 
+########## Run HiCNV for each cell line using no auto-bandwidth ##########
 
-
-
-
-
-
-# Helper function to obtain all perREfragStats for a technical replicate
+# Helper function for rule combine_bio_reps_perREfragStats
+# Obtains all perREfragStats for a technical replicate
 def get_bio_rep_chrflt_perREfragStats(wildcards):
     input_fns = glob.glob('results/main/{cline}/hicnv/tech_combined/{cline}.*.perREfragStats'.format(**wildcards))
     return(sorted(input_fns))
-
 
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
@@ -408,6 +393,9 @@ rule run_bio_hicnv:
 ############## Methods developed TO USE auto bandwidth ##############
 #####################################################################
 
+########## Run HiCNV per cell line ##########
+# Uses auto-bandwidth and automatic detection of refchrom
+
 # Run HiCnv after merging biological replicates
 # I am also saving the output of HiCnv as a meta file
 # because HiCnv is calculating the reference chromosome
@@ -458,6 +446,9 @@ rule run_bio_hicnv_auto_bandwidth:
             mv {wildcards.cline}_hicnv/ {output} >> {log} 2>&1
         """
 
+
+########## Run HiCNV per technical replicate ##########
+# Uses auto-bandwidth and refchrom from the combined samples 
 
 # Run HiCnv a chromosome at a time
 #rules.make_perREfragStats.output.frag_stats
@@ -513,19 +504,23 @@ rule run_tech_hicnv_auto_bandwidth:
         """
 
 
-# Helper function to obtain all perREfragStats for a technical replicate
+########## Plotting bedgraphs of CNV calls ##########
+
+# Helper function to obtain all CNV segmentation files for
+# a biological replicate, used to merge all the CNV segmentation data.
 def get_bio_rep_auto_bw_cnv_est(wildcards):
     fn = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/CNV_Estimation/{cline}.chr*.cnv.bedGraph'
     input_fns = glob.glob(fn.format(**wildcards))
     return(sorted(input_fns))
 
 
-# merged the cnv beds
+# Merge the CNV segmentation beds generated by HiCnv, HiCnv generates
+# separate CNV bed files for each chromosomes; merging for biological replicates.
 rule merge_bio_hicnv_cnv_estimation_bedGraphs:
     input:
         get_bio_rep_auto_bw_cnv_est
     output:
-        merged = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.bedGraph'
+        merged = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.cnv_segmentation.bedGraph'
     log:
         'results/main/{cline}/logs/rule_merge_bio_hicnv_cnv_estimation_bedGraphs_{cline}.log'
     shell:
@@ -533,30 +528,33 @@ rule merge_bio_hicnv_cnv_estimation_bedGraphs:
             cat {input} > {output}
         """
 
-
-# plot for auto bandwidth using custom script
-use rule plot_tech_hicnv_bedpe as plot_bio_hicnv_with_bw_bedpe with:
+# Plot the CNV segmentation data for a single biological replicate
+# which uses auto bandwidth
+use rule plot_tech_rep_intermediate_cnv_values as plot_bio_hicnv_with_bw_bedpe with:
     input:
         bedgraph = rules.merge_bio_hicnv_cnv_estimation_bedGraphs.output.merged
     output:
-        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.png'
+        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.cnv_segmentation.png'
     log:
         'results/main/{cline}/logs/rule_plot_bio_hicnv_auto_bandwidth_bedpe_{cline}.log'
 
 
-# Helper function to obtain all perREfragStats for a technical replicate
+# Helper function to obtain all CNV segmentation files for
+# a single technical replicate, used to merge all the CNV segmentation data.
 def get_tech_rep_auto_bw_cnv_est(wildcards):
     fn = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.chr*.cnv.bedGraph'
     input_fns = glob.glob(fn.format(**wildcards))
     return(sorted(input_fns))
 
 
-# merged the cnv beds
+# Merge the CNV segmentation beds generated by HiCnv, HiCnv generates
+# separate CNV bed files for each chromosomes; merging for a single
+# technical replicate.
 rule merge_tech_hicnv_cnv_estimation_bedGraphs:
     input:
         get_tech_rep_auto_bw_cnv_est
     output:
-        merged = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/figures/{cline}.{srr}.bedGraph'
+        merged = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/figures/{cline}.{srr}.cnv_segmentation.bedGraph'
     log:
         'results/main/{cline}/logs/rule_merge_tech_hicnv_cnv_estimation_bedGraphs_{cline}_{srr}.log'
     shell:
@@ -564,30 +562,30 @@ rule merge_tech_hicnv_cnv_estimation_bedGraphs:
             cat {input} > {output}
         """
 
-
-# plot for auto bandwidth using custom script
-use rule plot_tech_hicnv_bedpe as plot_tech_hicnv_with_bw_bedpe with:
+# Plot the CNV segmentation data for a single technical replicate
+# which uses auto bandwidth
+use rule plot_tech_rep_intermediate_cnv_values as plot_tech_hicnv_with_bw_bedpe with:
     input:
         bedgraph = rules.merge_tech_hicnv_cnv_estimation_bedGraphs.output.merged
     output:
-        image = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/figures/{cline}.{srr}.png'
+        image = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_{srr}_hicnv/figures/{cline}.{srr}.cnv_segmentation.png'
     log:
         'results/main/{cline}/logs/rule_plot_tech_hicnv_auto_bandwidth_bedpe_{cline}_{srr}.log'
 
 
-# Helper function to obtain all perREfragStats for a technical replicate
+# Helper function to obtain all CNV segmentation files for a biological replicate
 def get_all_tech_rep_auto_bw_cnv_est(wildcards):
     fn = 'results/main/{cline}/hicnv/tech_run_auto_bandwidth/{cline}_*_hicnv/figures/{cline}.*.bedGraph'
     input_fns = glob.glob(fn.format(**wildcards))
     return(sorted(input_fns))
 
-# plot all tech reps on a single plot for auto bandwidth using custom script
-# output will be saved within the merged hicnv output
+# Plot all technical reps on a single plot for auto bandwidth using a custom
+# plotting script output will be saved within the merged hicnv output
 rule plot_all_tech_hicnv_bedpe:
     input:
         bedgraphs = get_all_tech_rep_auto_bw_cnv_est
     output:
-        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.all_tech_reps.png'
+        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.all_tech_reps.cnv_segmentation.png'
     log:
         'results/main/{cline}/logs/rule_plot_all_tech_hicnv_bedpe_{cline}.log'
     params:
@@ -599,25 +597,62 @@ rule plot_all_tech_hicnv_bedpe:
             python workflow/scripts/plot_hicnv_bedgraphs_for_tech_reps.py \
                         --bedgraphs {input} \
                         --outfn {output} \
-                        --max-cn {params.max_cn} >> {log} 2>&1
+                        --max-y {params.max_cn} >> {log} 2>&1
         """
 
 
+# Plot the CNV segmentation data for a single biological replicate
+# which uses auto bandwidth
+rule plot_bio_rep_coverage:
+    input:
+        bedgraph = rules.combine_bio_reps_perREfragStats.output.combined_frag_stats
+    output:
+        image = 'results/main/{cline}/hicnv/bio_run_auto_bandwidth/{cline}_hicnv/figures/{cline}.coverage.png'
+    log:
+        'results/main/{cline}/logs/rule_plot_bio_rep_coverage_{cline}.log'
+    params:
+        max_cn = 11
+    resources:
+        mem_mb = 8000
+    shell:
+        r"""
+            python workflow/scripts/plot_hicnv_bedgraph.py \
+                        --bedgraph {input} \
+                        --outfn {output} \
+                        --data-type other \
+                        --data-column 4 >> {log} 2>&1
+        """
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+########## Deprecated ##########
+## make the ini file required for plotting
+## currently not put into use due to custom script
+#rule make_pyGenomeTracks_ini:
+#    input:
+#        bedgraph = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/CNV_Estimation/{cline}.{srr}.cnv.bedGraph'
+#    output:
+#        ini = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.ini'
+#    log:
+#        'results/main/{cline}/logs/rule_make_pyGenomeTracks_{cline}_{srr}.log'
+#    shell:
+#        r"""
+#            {config[pyGenomeTracks]}/make_tracks_file --trackFiles {input.bedgraph} -o {output.ini}
+#        """
+#
+#
+## plot using the ini file
+## currently not put into use due to custom script
+#rule plot_with_pyGenomeTracks:
+#    input:
+#        ini = rules.make_pyGenomeTracks_ini.output.ini
+#    output:
+#        image = 'results/main/{cline}/hicnv/run/{cline}_{srr}_hicnv/figures/{cline}.{srr}.{chr}.pdf'
+#    log:
+#        'results/main/{cline}/logs/rule_plot_with_pyGenomeTracks_{cline}_{srr}_{chr}.log'
+#    shell:
+#        r"""
+#            {config[pyGenomeTracks]}/pyGenomeTracks --tracks {input.ini} --region {wildcards.chr}:0-10000000 --outFileName {output.image}
+#        """
 
 
 

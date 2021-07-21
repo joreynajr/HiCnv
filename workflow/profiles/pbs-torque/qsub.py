@@ -45,6 +45,12 @@ else:
 # checking for the presence of log files
 try:
     out = job_properties['log'][0]
+
+    # also make the log directory tree + log file
+    bn = os.path.dirname(out)
+    os.makedirs(bn, exist_ok=True)
+    #open(out, 'a').close()
+
 except KeyError:
     raise("Forgot to set out log file for current rule.")
 
