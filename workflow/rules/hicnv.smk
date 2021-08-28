@@ -6,7 +6,7 @@ rule download_hg38_mappability:
         map = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.bw',
         bedgraph = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.bedGraph'
     output:
-        sorted_bg = 'results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph'
+        sorted_bg = protected('results/refs/hg38_mappability/k50.Umap.MultiTrackMappability.sorted.bedGraph')
     resources:
         mem_mb = 16000
     log:
@@ -193,7 +193,7 @@ rule combine_tech_reps_perREfragStats:
     params:
         re_fs_list = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.REfragStats.list.txt'
     output:
-        combined_frag_stats = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats'
+        combined_frag_stats = protected('results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats')
     resources:
         nodes = 1,
         ppn = 1,
@@ -304,8 +304,66 @@ rule plot_tech_rep_intermediate_cnv_values:
 # Helper function for rule combine_bio_reps_perREfragStats
 # Obtains all perREfragStats for a technical replicate
 def get_bio_rep_chrflt_perREfragStats(wildcards):
-    input_fns = glob.glob('results/main/{cline}/hicnv/tech_combined/{cline}.*.perREfragStats'.format(**wildcards))
-    return(sorted(input_fns))
+
+    # load the fastq meta data 
+    fastq_sra = read_table('config/fastq_sra_meta.tsv')
+    fastq_4dn = read_table('config/fastq_4dn_meta.tsv')
+
+    # checking for the current cell line in both list
+    # each cell line should only come from a single list OR 
+    # the cell line can be given a slightly different name.
+    if (wildcards.cline in fastq_sra.cline.tolist()) and (wildcards.cline in fastq_4dn.cline.tolist()):
+        msg = 'Cell line is in both config/fastq_sra_meta.tsv and '
+        msg += 'config/fastq_sra_meta.tsv. Please remove cell line '
+        msg += 'from one fastq config file before proceeding or give '
+        msg += 'a different name. Pipeline terminaled without completion.'
+        raise Exception(msg)
+
+    # handle the r1 and r2 files when sra is the source
+    if wildcards.cline in fastq_sra.cline.tolist():
+
+        # get the SRR id's
+        srr_ids = fastq_sra.loc[fastq_sra['cline'] == wildcards.cline, 'exp_acc']
+        srr_ids = srr_ids.tolist()
+
+        # generate all the file paths
+        template = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats'
+        fns = []
+        for srr in srr_ids:
+            fn = template.format(srr=srr, **wildcards)
+            fns.append(fn)    
+                
+    # handle the r1 and r2 files when 4DN is the source
+    elif wildcards.cline in fastq_4dn.cline.tolist():
+        # filter for data from this cell line
+        final_4dn = fastq_4dn[(fastq_4dn.cline == wildcards.cline)]
+
+        # get the r1 and r2 names
+        fns = set()
+        for i, sr in final_4dn.iterrows():
+    
+            # created the accession id
+            acc = '{}-B{}-T{}'.format(sr.exp_acc, sr.biorep, sr.techrep)
+
+            # generate all the file paths
+            template = 'results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats'
+            fn = template.format(srr=acc, **wildcards)
+            fns.add(fn)    
+        fns = sorted(fns)
+
+    # sample is in neither fastq samplesheet
+    else:
+        msg = 'Cell line is not in config/fastq_sra_meta.tsv nor '
+        msg += 'config/fastq_sra_meta.tsv. Please add before proceeding. '
+        msg += 'Pipeline terminaled without completion.'
+        raise Exception(msg)
+
+    # checking for any errors
+    if len(fns) == 0:
+        msg = 'Missing files results/main/{cline}/hicnv/tech_combined/{cline}.{srr}.perREfragStats'
+        msg = msg.format(**wildcards)
+        raise Exception(msg)
+    return(fns)
 
 # Create this file as per your restriction fragment.
 # Scripts to create this file are under ../scripts/F_GC_MAP_Files/ directory.
@@ -315,7 +373,7 @@ rule combine_bio_reps_perREfragStats:
     params:
         re_fs_list = 'results/main/{cline}/hicnv/bio_combined/{cline}.REfragStats.list.txt'
     output:
-        combined_frag_stats = 'results/main/{cline}/hicnv/bio_combined/{cline}.perREfragStats'
+        combined_frag_stats = protected('results/main/{cline}/hicnv/bio_combined/{cline}.perREfragStats')
     resources:
         nodes = 1,
         ppn = 1,

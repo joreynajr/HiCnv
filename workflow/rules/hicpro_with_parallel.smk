@@ -4,7 +4,7 @@
 # is that you would have a single large >70gb file per sample (bio-rep).
 rule split_before_hicpro:
     input:
-        unpack(get_r1_r2_fastqs)
+        unpack(get_r1_r2_fastqs_v2)
     output:
         outdir = directory('results/main/{cline}/reads/split_fastqs/'),
         split_complete = touch('results/main/{cline}/reads/split_fastqs/split.complete')
@@ -57,7 +57,8 @@ def get_split_r1_r2_fastqs(wildcards):
 
 # Renaming because _1 and _2 in file names can caused a problem
 # which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
-rule rename_before_hicpro_with_parallel: #local rule
+# local rule
+rule rename_before_hicpro_with_parallel: 
     input:
         unpack(get_split_r1_r2_fastqs),
         split_complete = 'results/main/{cline}/reads/split_fastqs/split.complete'
@@ -71,37 +72,54 @@ rule rename_before_hicpro_with_parallel: #local rule
             mkdir -p {output.new_dir}
 
             # renaming R1's
+            echo "# renaming R1's" > {log}
             for fn in {input.r1s};
             do
+                echo "fn: $fn"
+
                 # get the new fn
+                echo "	# get the new fn" >> {log} 
                 new_fn=$(basename $fn | sed "s/_1\.fastq/_R1.fastq/")
 
                 # get the current srr
-                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9]*\)_.*$/\1/")
+                echo "	# get the current srr" >> {log}
+                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9-]*\)_.*$/\1/")
 
                 # make an srr based directory
+                echo "	# make an srr based directory" >> {log}
                 new_dir="{output.new_dir}/${{srr}}"
                 mkdir -p $new_dir
 
                 # symlink the renamed fn to an srr based directory
+                echo "	# symlink the renamed fn to an srr based directory" >> {log}
                 new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
                 abs_orig=$(readlink -f $fn)
-                ln -s $abs_orig $new_fn
+                ln -s $abs_orig $new_fn 2>> {log}
             done
-
+            
             # renaming R2's
+            echo >> {log}
+            echo "# renaming R2's" >> {log}
             for fn in {input.r2s};
             do
+                echo "fn: $fn" >> {log}
+
                 # get the new fn
+                echo "	# get the new fn" >> {log}
                 new_fn=$(basename $fn | sed "s/_2\.fastq/_R2.fastq/")
 
                 # get the current srr
-                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9]*\)_.*$/\1/")
+                echo "	# get the current srr" >> {log}
+                srr=$(basename $fn | sed "s/^.*_\([A-Za-z0-9-]*\)_.*$/\1/")
 
                 # symlink the renamed fn to an srr based directory
+                echo "	# symlink the renamed fn to an srr based directory" >> {log}
                 new_fn="{output.new_dir}/${{srr}}/${{new_fn}}"
                 abs_orig=$(readlink -f $fn)
-                ln -s $abs_orig $new_fn
+
+                echo $abs_orig >> {log}
+                echo $new_fn >> {log}
+                ln -s $abs_orig $new_fn 2>> {log}
             done
         """
 
@@ -122,7 +140,7 @@ rule hicpro_with_parallel: # localrule
     log:
         'results/main/{cline}/logs/rule_hicpro_with_parallel_{cline}.log'
     conda:
-        'workflow/envs/HiC-Pro-3.0.0.yml'
+        'envs/HiC-Pro-3.0.0.yml'
     shell:
         """
             # remove the snakemake made outdir since HiCPro wants to make it
@@ -160,6 +178,8 @@ rule hicpro_with_parallel_started: # localrule
         qsubs_started = touch('results/main/{cline}/hicpro_with_parallel/qsubs.started')
     params:
         outdir = 'results/main/{cline}/hicpro_with_parallel/',
+    conda:
+        'envs/HiC-Pro-3.0.0.yml'
     shell:
         """
             # submit step 1
