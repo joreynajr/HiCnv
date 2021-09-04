@@ -14,7 +14,7 @@ def re_config_file(wildcards):
 
 # Helper function to obtain all for a given cell line
 # Make sure to download the accession list from SRA
-def get_r1_r2_fastqs(wildcards):
+def get_r1_r2_fastqs_for_renaming(wildcards):
 
     # init lists to collect r1 and r2 files
     r1s = []
@@ -35,72 +35,6 @@ def get_r1_r2_fastqs(wildcards):
     d = {'r1s': r1s, 'r2s': r2s}
     return(d)
 
-# Helper function to obtain all for a given cell line
-# Make sure to download the accession list from SRA
-def get_r1_r2_fastqs_v2(wildcards):
-
-    # init lists to collect r1 and r2 files
-    r1s = []
-    r2s = []
-
-    # load the fastq meta data 
-    fastq_sra = read_table('config/fastq_sra_meta.tsv')
-    fastq_4dn = read_table('config/fastq_4dn_meta.tsv')
-
-    # checking for the current cell line in both list
-    # each cell line should only come from a single list OR 
-    # the cell line can be given a slightly different name.
-    if (wildcards.cline in fastq_sra.cline.tolist()) and (wildcards.cline in fastq_4dn.cline.tolist()):
-        msg = 'Cell line is in both config/fastq_sra_meta.tsv and '
-        msg += 'config/fastq_sra_meta.tsv. Please remove cell line '
-        msg += 'from one fastq config file before proceeding or give '
-        msg += 'a different name. Pipeline terminaled without completion.'
-        raise Exception(msg)
-
-    # handle the r1 and r2 files when sra is the source
-    if wildcards.cline in fastq_sra.cline.tolist():
-        final_sra = fastq_sra[(fastq_sra.cline == wildcards.cline) & (fastq_sra.file_type == 'fastq')]
-        for acc in sorted(final_sra.exp_acc.tolist()):
-            r1 = 'results/main/{cline}/reads/{acc}_1.fastq.gz'.format(cline=wildcards.cline, acc=acc)
-            r1s.append(r1)
-            r2 = 'results/main/{cline}/reads/{acc}_1.fastq.gz'.format(cline=wildcards.cline, acc=acc)
-            r2s.append(r2)
-            
-    # handle the r1 and r2 files when 4DN is the source
-    elif wildcards.cline in fastq_4dn.cline.tolist():
-        # filter for data from this cell line
-        final_4dn = fastq_4dn[(fastq_4dn.cline == wildcards.cline) & (fastq_4dn.file_type == 'fastq')]
-
-        # get the r1 and r2 names
-        for i, sr in final_4dn.iterrows():
-    
-            # created the accession id
-            acc = '{}-B{}-T{}'.format(sr.exp_acc, sr.biorep, sr.techrep)
-
-            # name the fastq
-            fastq = 'results/main/{cline}/reads/{acc}_{rnum}.fastq.gz'
-            fastq = fastq.format(cline=wildcards.cline, acc=acc, rnum=sr.r1_or_r2)
-
-            # add r1 or r2 to the corresponding list
-            if sr.r1_or_r2 in [1, '1']:
-                r1s.append(fastq)
-            elif sr.r1_or_r2 in [2, '2']:
-                r2s.append(fastq)
-            else:
-                msg = 'cline: {}, exp_acc: {} has an incorrect r1_or_r2: {}. '
-                msg += 'Pipeline terminaled without completion.'
-                msg = msg.format(wildcards.cline, acc, sr.r1_or_r2)
-                raise Exception(msg)
-
-    # sample is in neither fastq samplesheet
-    else:
-        msg = 'Cell line is not in config/fastq_sra_meta.tsv nor '
-        msg += 'config/fastq_sra_meta.tsv. Please add before proceeding. '
-        msg += 'Pipeline terminaled without completion.'
-        raise Exception(msg)
-
-    d = {'r1s': r1s, 'r2s': r2s}
-    return(d)
 
 
 # Helper function to obtain all for a given cell line
@@ -147,7 +81,7 @@ def get_srrs(wildcards):
 # which meant I reverted to using _R1 and _R2 in the HiC-Pro configuration file.
 rule rename_before_hicpro:
     input:
-        unpack(get_r1_r2_fastqs)
+        unpack(get_r1_r2_fastqs_for_renaming)
     output:
         new_dir = directory('results/main/{cline}/hicpro/renamed_fastqs/{cline}/'),
         rename_complete = touch('results/main/{cline}/hicpro/renamed_fastqs/renamed.complete')
